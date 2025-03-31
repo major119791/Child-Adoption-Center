@@ -11,6 +11,7 @@ typedef struct Child {
     char gender[100];
 }Child;
 //testing
+//new
 typedef struct Parent {
     int age;
     char name[100];
