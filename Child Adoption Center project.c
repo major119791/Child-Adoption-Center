@@ -10,7 +10,7 @@ typedef struct Child {
     char birthDate[100];
     char gender[100];
 }Child;
-
+//testing
 typedef struct Parent {
     int age;
     char name[100];
