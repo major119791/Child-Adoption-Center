@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,7 +41,7 @@ void menu() {
 }
 void signUp() {
     User user;
-    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Users.txt", "a");
+    FILE *file = fopen("C:\\Users\\L65X15W08\\Documents\\Child Database\\sers.txt", "a");
     if (!file) {
         printf("Error: Could not open user file.\n");
         return;
@@ -167,7 +168,7 @@ void generateChildID(char id[], char gender) {
 
 void addChild() {
     Child child;
-    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Children.txt", "a");
+    FILE *file = fopen("C:\\Users\\L65X15W08\\Documents\\Child Database\\Childrens.txt", "a");
     if (!file) {
         printf("Error opening child file.\n");
         return;
@@ -225,7 +226,7 @@ void addChild() {
 }
 
 void loadChildren() {
-    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Children.txt", "r");
+    FILE *file = fopen("C:\\Users\\L65X15W08\\Documents\\Child Database\\Childrens.txt", "a");
     if (!file) {
         printf("No child data found. Starting fresh.\n");
         return;
@@ -289,31 +290,22 @@ void viewChildren() {
     printf("\n========================================\n");
     printf("            CHILD PROFILES             ");
     printf("\n========================================\n");
-
     if (childCount == 0) {
         printf("\nNo child profiles available.\n");
         return;
     }
-
     for (i = 0; i < childCount; i++) {
         printf("\n----------------------------------------\n");
-        printf(" Child ID    : %s\n", children[i].id);
         printf(" Name        : %s\n", children[i].name);
         printf(" Age         : %d years\n", children[i].age);
         printf(" Gender      : %s\n", children[i].gender);
         printf(" Birth Date  : %s\n", children[i].birthDate);
         printf(" Height      : %.2f cm\n", children[i].height);
         printf(" Weight      : %.2f kg\n", children[i].weight);
-        printf(" Blood Type  : %s\n", children[i].bloodType);
-        printf(" Allergies   : %s\n", children[i].allergies);
-        printf(" Medical Conditions : %s\n", children[i].medicalConditions);
-        printf(" Education Level    : %s\n", children[i].educationLevel);
-        printf(" Hobbies & Interests: %s\n", children[i].hobbies);
-        printf(" Languages Spoken   : %s\n", children[i].languagesSpoken);
         printf(" Status      : %s\n", children[i].adopted ? "Adopted" : "Available");
         printf("----------------------------------------\n");
     }
-}//mao ni bago
+}
 void viewAdoptedChildren() {
 }
 void viewUsers() {
@@ -424,29 +416,33 @@ void userLogin() {
     
 } 
 void loadUsers() {
-    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Users.txt", "r");
+    FILE *file = fopen("C:\\Users\\L65X15W08\\Documents\\Child Database\\Users.txt", "r");
     if (!file) {
         printf("? No user data found. Starting fresh.\n");
         return;
     }
 
     userCount = 0;
-    while (fscanf(file, "=================================\n") != EOF) {
-        fscanf(file, "First Name   : %[^\n]\n", users[userCount].firstName);
-        fscanf(file, "Last Name    : %[^\n]\n", users[userCount].lastName);
-        fscanf(file, "Email        : %s\n", users[userCount].email);
-        fscanf(file, "Password     : %s\n", users[userCount].password);
-        fscanf(file, "Age          : %d\n", &users[userCount].age);
-        fscanf(file, "Address      : %[^\n]\n", users[userCount].address);
-        fscanf(file, "Occupation   : %[^\n]\n", users[userCount].occupation);
-        fscanf(file, "Phone        : %s\n", users[userCount].phone);
-        fscanf(file, "=================================\n\n");
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        if (strncmp(line, "First Name", 10) == 0) {
+            sscanf(line, "First Name   : %[^\n]", users[userCount].firstName);
+            fgets(line, sizeof(line), file); sscanf(line, "Last Name    : %[^\n]", users[userCount].lastName);
+            fgets(line, sizeof(line), file); sscanf(line, "Email        : %s", users[userCount].email);
+            fgets(line, sizeof(line), file); sscanf(line, "Password     : %s", users[userCount].password);
+            fgets(line, sizeof(line), file); sscanf(line, "Age          : %d", &users[userCount].age);
+            fgets(line, sizeof(line), file); sscanf(line, "Address      : %[^\n]", users[userCount].address);
+            fgets(line, sizeof(line), file); sscanf(line, "Occupation   : %[^\n]", users[userCount].occupation);
+            fgets(line, sizeof(line), file); sscanf(line, "Phone        : %s", users[userCount].phone);
+            fgets(line, sizeof(line), file);
 
-        userCount++;
-        if (userCount >= MAX_USERS) break; 
+            userCount++;
+            if (userCount >= MAX_USERS) break;
+        }
     }
 
     fclose(file);
+    printf("Loaded %d users from file.\n", userCount);
 }
 
 int main() {
