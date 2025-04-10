@@ -8,7 +8,7 @@ typedef struct {
     char firstName[50], lastName[50], email[100], password[50];
     char address[100], occupation[50], phone[15];
     int age;
-} User;
+} User; //test
 typedef struct {
     char id[8], name[50], gender[10], birthDate[20];
     int age;
