@@ -289,22 +289,31 @@ void viewChildren() {
     printf("\n========================================\n");
     printf("            CHILD PROFILES             ");
     printf("\n========================================\n");
+
     if (childCount == 0) {
         printf("\nNo child profiles available.\n");
         return;
     }
+
     for (i = 0; i < childCount; i++) {
         printf("\n----------------------------------------\n");
+        printf(" Child ID    : %s\n", children[i].id);
         printf(" Name        : %s\n", children[i].name);
         printf(" Age         : %d years\n", children[i].age);
         printf(" Gender      : %s\n", children[i].gender);
         printf(" Birth Date  : %s\n", children[i].birthDate);
         printf(" Height      : %.2f cm\n", children[i].height);
         printf(" Weight      : %.2f kg\n", children[i].weight);
+        printf(" Blood Type  : %s\n", children[i].bloodType);
+        printf(" Allergies   : %s\n", children[i].allergies);
+        printf(" Medical Conditions : %s\n", children[i].medicalConditions);
+        printf(" Education Level    : %s\n", children[i].educationLevel);
+        printf(" Hobbies & Interests: %s\n", children[i].hobbies);
+        printf(" Languages Spoken   : %s\n", children[i].languagesSpoken);
         printf(" Status      : %s\n", children[i].adopted ? "Adopted" : "Available");
         printf("----------------------------------------\n");
     }
-}
+}//mao ni bago
 void viewAdoptedChildren() {
 }
 void viewUsers() {
