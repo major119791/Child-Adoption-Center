@@ -31,13 +31,29 @@ void clearScreen() {
     }
 
 void menu() {
-	
     int choice;
     do {
         printf("\n1. Adopt a Child\n2. View Children\n3. Return a Child\n4. Exit\nChoice: ");
         scanf("%d", &choice);
+        clearScreen();
+        switch (choice) {
+            case 1:
+                adoptChild();  
+                break;
+            case 2:
+                viewChildren();
+                break;
+            case 3:
+                break;
+            case 4:
+                printf("\nExiting...\n");
+                break;
+            default:
+                printf("\nInvalid choice.\n");
+        }
     } while (choice != 4);
 }
+
 void signUp() {
     User user;
     FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Users.txt", "a");
@@ -175,11 +191,27 @@ int login() {
 void generateChildID(char id[], char gender) {
     const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     int i;
-    id[0] = gender; 
-    for (i = 1; i < 7; i++) {
-        id[i] = charset[rand() % (sizeof(charset) - 1)];
+    int idExists = 1;
+
+    
+    while (idExists) {
+        id[0] = gender;  
+        
+        
+        for (i = 1; i < 7; i++) {
+            id[i] = charset[rand() % (sizeof(charset) - 1)];
+        }
+        id[7] = '\0';  
+
+        
+        idExists = 0;  
+        for (i = 0; i < childCount; i++) {
+            if (strcmp(children[i].id, id) == 0) {
+                idExists = 1;  
+                break;
+            }
+        }
     }
-    id[7] = '\0'; 
 }
 
 void addChild() {
@@ -366,27 +398,31 @@ void viewChildren() {
 
     for (i = 0; i < childCount; i++) {
         
-        if (children[i].id[0] == '\0') {
+        // Skip over adopted children (adopted == 1)
+        if (children[i].adopted == 1) {
             continue;
         }
 
-        validProfiles++;
-        printf("\n----------------------------------------\n");
-        printf(" Child ID            : %s\n", children[i].id);
-        printf(" Name                : %s\n", children[i].name);
-        printf(" Age                 : %d years\n", children[i].age);
-        printf(" Gender              : %s\n", children[i].gender);
-        printf(" Birth Date          : %s\n", children[i].birthDate);
-        printf(" Height              : %.2f cm\n", children[i].height);
-        printf(" Weight              : %.2f kg\n", children[i].weight);
-        printf(" Blood Type          : %s\n", children[i].bloodType);
-        printf(" Allergies           : %s\n", children[i].allergies);
-        printf(" Medical Conditions  : %s\n", children[i].medicalConditions);
-        printf(" Education Level     : %s\n", children[i].educationLevel);
-        printf(" Hobbies & Interests : %s\n", children[i].hobbies);
-        printf(" Languages Spoken    : %s\n", children[i].languagesSpoken);
-        printf(" Status              : %s\n", children[i].adopted ? "Adopted" : "Available");
-        printf("----------------------------------------\n");
+        // Only count and display valid profiles
+        if (children[i].id[0] != '\0') {
+            validProfiles++;
+            printf("\n----------------------------------------\n");
+            printf(" Child ID            : %s\n", children[i].id);
+            printf(" Name                : %s\n", children[i].name);
+            printf(" Age                 : %d years\n", children[i].age);
+            printf(" Gender              : %s\n", children[i].gender);
+            printf(" Birth Date          : %s\n", children[i].birthDate);
+            printf(" Height              : %.2f cm\n", children[i].height);
+            printf(" Weight              : %.2f kg\n", children[i].weight);
+            printf(" Blood Type          : %s\n", children[i].bloodType);
+            printf(" Allergies           : %s\n", children[i].allergies);
+            printf(" Medical Conditions  : %s\n", children[i].medicalConditions);
+            printf(" Education Level     : %s\n", children[i].educationLevel);
+            printf(" Hobbies & Interests : %s\n", children[i].hobbies);
+            printf(" Languages Spoken    : %s\n", children[i].languagesSpoken);
+            printf(" Status              : %s\n", "Available");
+            printf("----------------------------------------\n");
+        }
     }
 
     if (validProfiles == 0) {
@@ -401,9 +437,100 @@ void viewChildren() {
     return;  
 }
 
-
 void viewAdoptedChildren() {
+    int i;
+    int validProfiles = 0;
+
+    printf("\n========================================\n");
+    printf("        ADOPTED CHILD PROFILES         \n");
+    printf("========================================\n");
+
+    for (i = 0; i < childCount; i++) {
+
+        // Only display adopted children (adopted == 1)
+        if (children[i].adopted == 1 && children[i].id[0] != '\0') {
+            validProfiles++;
+            printf("\n----------------------------------------\n");
+            printf(" Child ID            : %s\n", children[i].id);
+            printf(" Name                : %s\n", children[i].name);
+            printf(" Age                 : %d years\n", children[i].age);
+            printf(" Gender              : %s\n", children[i].gender);
+            printf(" Birth Date          : %s\n", children[i].birthDate);
+            printf(" Height              : %.2f cm\n", children[i].height);
+            printf(" Weight              : %.2f kg\n", children[i].weight);
+            printf(" Blood Type          : %s\n", children[i].bloodType);
+            printf(" Allergies           : %s\n", children[i].allergies);
+            printf(" Medical Conditions  : %s\n", children[i].medicalConditions);
+            printf(" Education Level     : %s\n", children[i].educationLevel);
+            printf(" Hobbies & Interests : %s\n", children[i].hobbies);
+            printf(" Languages Spoken    : %s\n", children[i].languagesSpoken);
+            printf(" Status              : %s\n", "Adopted");
+            printf("----------------------------------------\n");
+        }
+    }
+
+    if (validProfiles == 0) {
+        printf("\nNo adopted child profiles available.\n");
+    }
+
+    printf("\nPress any key to go back...\n");
+    getchar();  
+    getchar();  
+
+    clearScreen();
+    return;
 }
+
+void adoptChild() {
+    int i;
+    char choice[8];  
+
+    printf("\n=== Available Children ===\n");
+
+    int availableCount = 0;
+    for (i = 0; i < childCount; i++) {
+        
+        if (children[i].adopted == 0 && strlen(children[i].id) > 0) {
+            printf("\n----------------------------------------\n");
+            printf("Child ID: %s\n", children[i].id);
+            printf("Name: %s\n", children[i].name);
+            printf("Age: %d years\n", children[i].age);
+            printf("Gender: %s\n", children[i].gender);
+            printf("Height: %.2f cm\n", children[i].height);
+            printf("Weight: %.2f kg\n", children[i].weight);
+            printf("Blood Type: %s\n", children[i].bloodType);
+            printf("Status: Available\n");
+            printf("----------------------------------------\n");
+            availableCount++;
+        }
+    }
+
+    if (availableCount == 0) {
+        printf("\nNo children available for adoption.\n");
+        return;
+    }
+
+    printf("\nEnter the Child ID to adopt or 0 to cancel: ");
+    scanf("%s", choice);  
+
+    if (strcmp(choice, "0") == 0) {
+        printf("\nAdoption canceled.\n");
+        return;
+    }
+
+    
+    for (i = 0; i < childCount; i++) {
+        if (children[i].adopted == 0 && strcmp(children[i].id, choice) == 0) {
+            children[i].adopted = 1;
+            printf("\nYou have successfully adopted %s!\n", children[i].name);
+            return;
+        }
+    }
+
+    printf("\nInvalid Child ID.\n");
+}
+
+
 
 
 void viewUsers() {
