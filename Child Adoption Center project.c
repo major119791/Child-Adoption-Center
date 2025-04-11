@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,7 +57,7 @@ void menu() {
 
 void signUp() {
     User user;
-    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Users.txt", "a");
+	FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Users.txt", "a");
     if (!file) {
         printf("Error: Could not open user file.\n");
         return;
@@ -78,7 +79,7 @@ void signUp() {
         if (scanf("%d", &choice) != 1) {
             printf("\nInvalid input. Please enter a number (1 or 2).\n");
             Sleep(1500);
-            while (getchar() != '\n'); // clear buffer
+            while (getchar() != '\n'); 
             clearScreen();
             continue;
         }
@@ -151,7 +152,7 @@ int login() {
         if (scanf("%d", &choice) != 1) {
             printf("\nInvalid input. Please enter a number (1 or 2).\n");
             Sleep(1500);
-            while (getchar() != '\n'); // clear input buffer
+            while (getchar() != '\n'); 
             clearScreen();
             continue;
         }
@@ -186,8 +187,6 @@ int login() {
         }
     }
 }
-
-
 void generateChildID(char id[], char gender) {
     const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     int i;
@@ -216,7 +215,7 @@ void generateChildID(char id[], char gender) {
 
 void addChild() {
     Child child;
-    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Children.txt", "a");
+	FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Childrens.txt", "a");
     if (!file) {
         printf("Error opening child file.\n");
         return;
@@ -329,7 +328,7 @@ void addChild() {
 }
 
 void loadChildren() {
-    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Children.txt", "r");
+	FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Childrens.txt", "r");
     if (!file) {
         printf("No child data found. Starting fresh.\n");
         return;
@@ -398,12 +397,10 @@ void viewChildren() {
 
     for (i = 0; i < childCount; i++) {
         
-        // Skip over adopted children (adopted == 1)
         if (children[i].adopted == 1) {
             continue;
         }
 
-        // Only count and display valid profiles
         if (children[i].id[0] != '\0') {
             validProfiles++;
             printf("\n----------------------------------------\n");
@@ -530,9 +527,6 @@ void adoptChild() {
     printf("\nInvalid Child ID.\n");
 }
 
-
-
-
 void viewUsers() {
     int i;
     printf("\n========================================\n");
@@ -656,7 +650,7 @@ void userLogin() {
     
 } 
 void loadUsers() {
-    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Users.txt", "r");
+	FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Users.txt", "r");
     if (!file) {
         printf("? No user data found. Starting fresh.\n");
         return;
