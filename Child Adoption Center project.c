@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <windows.h>  
+#include <time.h>     
 #define MAX_USERS 100
 #define MAX_CHILDREN 100
 
@@ -94,19 +96,27 @@ void signUp() {
         printf("Error: Could not open credentials file.\n");
         return;
     }
+    while (1) {
+        printf("========= Create Account =========\n");
+        printf("Enter Email (press 0 to go back): ");
+        scanf(" %s", login.email);
+        
+        if (strcmp(login.email, "0") == 0) {
+	            printf("\nReturning to main menu...\n");
+            Sleep(1500);  
+            clearScreen();
+            return;
+        }
 
-    printf("========= Create Account =========\n");
-    printf("Enter Email: ");
-    scanf(" %s", login.email);
-    printf("Enter Password: ");
-    scanf(" %s", login.password);
+        printf("Enter Password: ");
+        scanf(" %s", login.password);
+        fprintf(file, "%s %s\n", login.email, login.password);  
+        fclose(file);
 
-    fprintf(file, "%s %s\n", login.email, login.password);  
-    fclose(file);
-
-    printf("\nAccount Created Successfully!\n");
-    Sleep(1500);
-    clearScreen();
+        printf("\nAccount Created Successfully!\n");
+        Sleep(1500);  
+        clearScreen(); 
+    }
 }
 
 void submitApplication(const char *email) {
