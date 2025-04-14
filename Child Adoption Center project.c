@@ -656,7 +656,7 @@ void viewUsers() {
     }
 }
 void adminReviewApplications() {
-	int i;
+    int i, j, choice;
     FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Applications.txt", "r");
     if (!file) {
         printf("Error: Could not open application file.\n");
@@ -689,7 +689,7 @@ void adminReviewApplications() {
 
     fclose(file);
 
-    for (i = 0; i < count; i++) {
+    while (i < count) {
         printf("\n--- Reviewing Application (%d/%d) ---\n", i + 1, count);
         printf("Name             : %s %s\n", applications[i].firstName, applications[i].lastName);
         printf("Email            : %s\n", applications[i].email);
@@ -705,24 +705,57 @@ void adminReviewApplications() {
         printf("Reason           : %s\n", applications[i].reason);
         printf("Current Status   : %s\n", applications[i].status);
 
-        int choice;
-        printf("\n1. Approve\n2. Reject\n3. Skip\nChoice: ");
+        printf("\n1. Approve\n2. Reject\n3. Skip\n4. Go Back\n5. Search Application\nChoice: ");
         scanf("%d", &choice);
-        while (getchar() != '\n'); 
+        clearScreen();
 
         if (choice == 1) {
             strcpy(applications[i].status, "Approved");
-            printf("? Approved!\n");
+            printf("Application Approved!\n");
+            printf("Press any key to continue...\n");
+            getchar();  
         } else if (choice == 2) {
             strcpy(applications[i].status, "Rejected");
-            printf("? Rejected.\n");
+            printf("Application Rejected.\n");
+            printf("Press any key to continue...\n");
+            getchar();  
+        } else if (choice == 3) {
+            printf("You have skipped the application.\n");
+            printf("Press any key to continue...\n");
+            getchar(); 
+        } else if (choice == 4) {
+            printf("Going back to previous application...\n");
+            Sleep(1500);
+            continue;  
+        } else if (choice == 5) {
+            char searchEmail[100];
+            printf("Enter the email to search for: ");
+            scanf("%s", searchEmail);
+
+            int found = 0;
+            for (j = 0; j < count; j++) {
+                if (strcmp(applications[j].email, searchEmail) == 0) {
+                    printf("Application found:\n");
+                    printf("Name: %s %s\n", applications[j].firstName, applications[j].lastName);
+                    printf("Email: %s\n", applications[j].email);
+                    printf("Status: %s\n", applications[j].status);
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found) {
+                printf("No application found with that email.\n");
+            }
+            printf("Press any key to go back to the application review.\n");
+            getchar();  
         } else {
-            printf("? Skipped.\n");
+            printf("Invalid choice. Please select 1, 2, 3, 4, or 5.\n");
         }
 
-        printf("\n");
+        printf("\nPress any key to continue to the next application...\n");
+        getchar();  
+        i++;
     }
-
     file = fopen("D:\\Programs\\Child Adoption Database\\Applications.txt", "w");
     if (!file) {
         printf("Error: Could not save updated applications.\n");
@@ -749,7 +782,7 @@ void adminReviewApplications() {
     }
 
     fclose(file);
-    printf("? All updates saved!\n");
+    printf("All updates saved!\n");
 }
 int checkApplicationStatus(const char *email) {
     FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Applications.txt", "r");
@@ -795,27 +828,30 @@ void adminMenu() {
     int choice;
     do {
         printf("\n====== Admin Menu ======\n");
-        printf("1. Add Child Profile\n2. Delete Child Profile\n3. View All Children\n4. View Adopted Children\n5. View Registered Users\n6. Exit\nChoice: ");
+        printf("1. Add Child Profile\n2. Delete Child Profile\n3. View All Children\n4. View Adopted Children\n5. View Registered Users\n6. Review Applications\n7. Exit\nChoice: ");
         scanf("%d", &choice);
         clearScreen();
         switch (choice) {
             case 1: 
-            addChild(); 
-            break;
+                addChild(); 
+                break;
             case 2: 
-            deleteChild(); 
-            break;
+                deleteChild(); 
+                break;
             case 3: 
-            viewChildren(); 
-            break;
+                viewChildren(); 
+                break;
             case 4: 
-            viewAdoptedChildren(); 
-            break;
+                viewAdoptedChildren(); 
+                break;
             case 5: 
-            viewUsers(); 
-            break;
+                viewUsers(); 
+                break;
+            case 6: 
+                adminReviewApplications();  
+                break;
         }
-    } while (choice != 6);
+    } while (choice != 7);
 }
 void adminLogin() {
     char pass[20];
