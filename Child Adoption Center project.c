@@ -46,6 +46,7 @@ typedef struct {
     char languagesSpoken[100];
 } Child;
 
+char currentUserEmail[100];
 Login logins[MAX_USERS];
 User users[MAX_USERS];
 Child children[MAX_CHILDREN];
@@ -69,22 +70,34 @@ void clearScreen() {
 void menu() {
     int choice;
     do {
-		printf("\n======== Adoption Section ========\n");
-		printf("1. Adopt a Child\n");
-		printf("2. View Children\n");
-		printf("3. Return a Child\n");
-		printf("4. Exit\n");
-		printf("Choice: ");
+        printf("\n======== Adoption Section ========\n");
+        printf("1. Adopt a Child\n");
+        printf("2. View Children\n");
+        printf("3. Submit Application\n");
+        printf("4. Exit\n");
+        printf("Choice: ");
         scanf("%d", &choice);
         clearScreen();
+
         switch (choice) {
             case 1:
-                adoptChild();  
+                if (hasSubmittedApplication(currentUserEmail)) {
+                    
+                    if (isApplicationApproved(currentUserEmail)) {
+                        adoptChild();
+                    } else {
+                        printf("Your application is still pending approval by the admin.\n");
+                        printf("Please wait for the admin's approval before adopting.\n");
+                    }
+                } else {
+                    printf("You must submit an application before adopting.\n");
+                }
                 break;
             case 2:
                 viewChildren();
                 break;
             case 3:
+                submitApplication(currentUserEmail);
                 break;
             case 4:
                 printf("\nExiting...\n");
@@ -94,6 +107,7 @@ void menu() {
         }
     } while (choice != 4);
 }
+
 void signUp() {
     Login login;
     FILE *file;
@@ -113,7 +127,7 @@ void signUp() {
         printf("Enter Password: ");
         scanf(" %s", login.password);
 
-		file = fopen("D:\\Programs\\Child Adoption Database\\Credentials.txt", "a");
+		file = fopen("C:\\Users\\L65X15W07\\Desktop\\Credentials.txt", "a");
         if (!file) {
             printf("Error: Could not open credentials file.\n");
             return;
@@ -132,9 +146,69 @@ void signUp() {
     }
 }
 
+int hasSubmittedApplication(const char *email) {
+    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Applications.txt", "r");
+    char line[300];
+    if (!file) return 0;
+
+    while (fgets(line, sizeof(line), file)) {
+        if (strstr(line, "Email")) {
+            char storedEmail[100];
+            sscanf(line, "Email : %s", storedEmail);
+            if (strcmp(storedEmail, email) == 0) {
+                fclose(file);
+                return 1; 
+            }
+        }
+    }
+
+    fclose(file);
+    return 0; 
+}
+
+int isApplicationApproved(const char *email) {
+    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Applications.txt", "r");
+    if (!file) {
+        printf("Error: Could not open application file.\n");
+        return 0;  
+    }
+
+    char line[256];
+    User temp;
+    int foundUser = 0;
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+       
+        if (strcmp(line, "=================================\n") == 0) {
+          
+            temp.email[0] = '\0';
+            temp.status[0] = '\0';
+
+            
+            while (fgets(line, sizeof(line), file) != NULL && strcmp(line, "=================================\n") != 0) {
+                if (strstr(line, "Email") != NULL) {
+                    sscanf(line, "Email              : %[^\n]", temp.email);
+                } else if (strstr(line, "Status") != NULL) {
+                    sscanf(line, "Status             : %[^\n]", temp.status);
+                }
+            }
+
+          
+            if (strcmp(temp.email, email) == 0) {
+                fclose(file);
+                
+                return strcasecmp(temp.status, "Approved") == 0 ? 1 : 0;
+            }
+        }
+    }
+
+    fclose(file);
+    return 0;
+}
+
 void submitApplication(const char *email) {
     User user;
-    FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Applications.txt", "a");
+    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Applications.txt", "a");
     if (!file) {
         printf("Error: Could not open application file.\n");
         return;
@@ -331,15 +405,18 @@ void submitApplication(const char *email) {
     Sleep(1500);
     clearScreen();
 }
+
 void userLogin() {
-    char email[100], password[50], line[200];
-    int choice, i;
-    
-    FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Credentials.txt", "r");
+    char email[100], password[100], line[200];
+    int i, loginSuccess = 0;
+
+    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Credentials.txt", "r");
     if (!file) {
         printf("Error: Could not open credentials file.\n");
         return;
     }
+
+  
     loginCount = 0;
     while (fgets(line, sizeof(line), file)) {
         if (strstr(line, "Email:")) {
@@ -351,135 +428,47 @@ void userLogin() {
     }
     fclose(file);
 
-    while (1) {
-        printf("\n====== User Login ======\n");
-        printf("1. Enter Login Credentials\n");
-        printf("2. Submit an Application Form\n");
-        printf("3. Back to Main Menu\n");
-        printf("Enter your choice: ");
-        scanf("%d", &choice);
+    printf("\n====== User Login ======\n");
+    printf("Enter Email (press 0 to go back): ");
+    scanf("%s", email);
+    if (strcmp(email, "0") == 0) {
+        printf("Returning to main menu...\n");
+        Sleep(1000);
         clearScreen();
+        return;
+    }
 
-        if (choice == 1) {
-            int loginSuccess = 0;
+    printf("Enter Password (press 0 to go back): ");
+    scanf("%s", password);
+    if (strcmp(password, "0") == 0) {
+        printf("Returning to main menu...\n");
+        Sleep(1000);
+        clearScreen();
+        return;
+    }
 
-            printf("Enter Email (press 0 to go back): ");
-            scanf("%s", email);
-            if (strcmp(email, "0") == 0) {
-                printf("Returning to menu...\n");
-                Sleep(1000);
-                clearScreen();
-                continue;
-            }
+    clearScreen();
 
-            printf("Enter Password (press 0 to go back): ");
-            scanf("%s", password);
-            if (strcmp(password, "0") == 0) {
-                printf("Returning to menu...\n");
-                Sleep(1000);
-                clearScreen();
-                continue;
-            }
-
-            clearScreen();
-
-            for (i = 0; i < loginCount; i++) {
-                if (strcmp(logins[i].email, email) == 0 && strcmp(logins[i].password, password) == 0) {
-                    loginSuccess = 1;
-
-                    FILE *appFile = fopen("D:\\Programs\\Child Adoption Database\\Applications.txt", "r");
-                    if (!appFile) {
-                        printf("Error: Could not open Applications.txt\n");
-                        return;
-                    }
-
-                    char status[100];
-                    int found = 0;
-
-						while (fgets(line, sizeof(line), appFile)) {
-						    if (strstr(line, email)) {
-						        while (fgets(line, sizeof(line), appFile)) {
-						            if (strncmp(line, "Status", 6) == 0) {
-						                char *colon = strchr(line, ':');
-						                if (colon != NULL) {
-						                    strcpy(status, colon + 1);
-						                    while (status[0] == ' ') {
-						                        memmove(status, status + 1, strlen(status));
-						                    }
-						                    status[strcspn(status, "\r\n")] = '\0';
-						                    found = 1;
-						                    break;
-						                }
-						            }
-						        }
-						        break;
-						    }
-						}
-
-                    fclose(appFile);
-
-                    if (!found) {
-                        printf("No application found. Please submit your application first.\n");
-                        Sleep(2000);
-                        clearScreen();
-                        break;
-                    }
-
-                    if (strstr(status, "Approved")) {
-                        printf("Login Successful! Welcome.\n");
-                        Sleep(1500);
-                        clearScreen();
-                        menu();
-                        return;
-                    } else if (strstr(status, "Pending")) {
-                        printf("Your application is still under review. Please wait for approval.\n");
-                        Sleep(2000);
-                        clearScreen();
-                        break;
-                    } else if (strstr(status, "Rejected")) {
-                        printf("Your application was rejected.\n");
-                        Sleep(3000);
-                        clearScreen();
-                        break;
-                    } else {
-                        printf("Unknown application status: %s\n", status);
-                        Sleep(2000);
-                        clearScreen();
-                        break;
-                    }
-                }
-            }
-
-            if (!loginSuccess) {
-                printf("Invalid Email or Password. Please try again.\n");
-                Sleep(1500);
-                clearScreen();
-            }
-        }
-
-        else if (choice == 2) {
-            printf("Enter your registered email to submit an application (press 0 to go back): ");
-            scanf("%s", email);
-            if (strcmp(email, "0") == 0) {
-                printf("Returning to menu...\n");
-                Sleep(1000);
-                clearScreen();
-                continue;
-            }
-            submitApplication(email);
-        }
-
-        else if (choice == 3) {
-            return;
-        }
-
-        else {
-            printf("Invalid choice. Please enter 1, 2, or 3.\n");
-            Sleep(1500);
-            clearScreen();
+    for (i = 0; i < loginCount; i++) {
+        if (strcmp(logins[i].email, email) == 0 && strcmp(logins[i].password, password) == 0) {
+            loginSuccess = 1;
+            break;
         }
     }
+
+    if (loginSuccess) {
+    	strcpy(currentUserEmail, email);
+        printf("Login Successful! Welcome.\n");
+        Sleep(1500);
+        clearScreen();
+        menu();  
+    } else {
+        printf("Invalid Email or Password. Please try again.\n");
+        Sleep(1500);
+        clearScreen();
+    }
 }
+
 void generateChildID(char id[], char gender) {
     const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     int i;
@@ -508,7 +497,7 @@ void generateChildID(char id[], char gender) {
 
 void addChild() {
     Child child;
-    FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Childrens.txt", "a");
+    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Childrens.txt", "a");
     if (!file) {
         printf("Error opening child file.\n");
         return;
@@ -693,7 +682,7 @@ void addChild() {
 }
 
 void loadChildren() {
-    FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Childrens.txt", "r");
+    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Childrens.txt", "r");
     if (!file) {
         printf("No child data found. Starting fresh.\n");
         return;
@@ -840,6 +829,7 @@ void viewAdoptedChildren() {
     clearScreen();
     return;
 }
+
 void displayChildDetails(Child child) {
     printf("\n=================================\n");
     printf("Child ID           : %s\n", child.id);
@@ -860,57 +850,65 @@ void displayChildDetails(Child child) {
 }
 
 void adoptChild(const char *userEmail) {
-    FILE *childFile = fopen("D:\\Programs\\Child Adoption Database\\Childrens.txt", "r");
+    FILE *childFile = fopen("C:\\Users\\L65X15W07\\Desktop\\Childrens.txt", "r+");
     if (!childFile) {
         printf("Error: Cannot open Childrens.txt\n");
         return;
     }
 
     Child children[100];
-    int i, j;
-    int count = 0;
+    int j, i, count = 0;
     char line[256];
 
-    while (fgets(line, sizeof(line), childFile)) {
+   while (fgets(line, sizeof(line), childFile)) {
         if (strstr(line, "=================================")) {
             while (fgets(line, sizeof(line), childFile)) {
-                if (strstr(line, "Child ID"))
+                if (strstr(line, "Child ID")) {
                     sscanf(line, "Child ID           : %s", children[count].id);
-                else if (strstr(line, "Name"))
+                } else if (strstr(line, "Name")) {
                     sscanf(line, "Name               : %[^\n]", children[count].name);
-                else if (strstr(line, "Age"))
+                } else if (strstr(line, "Age")) {
                     sscanf(line, "Age                : %d", &children[count].age);
-                else if (strstr(line, "Gender"))
+                } else if (strstr(line, "Gender")) {
                     sscanf(line, "Gender             : %s", children[count].gender);
-                else if (strstr(line, "Birth Date"))
+                } else if (strstr(line, "Birth Date")) {
                     sscanf(line, "Birth Date         : %[^\n]", children[count].birthDate);
-                else if (strstr(line, "Height"))
+                } else if (strstr(line, "Height")) {
                     sscanf(line, "Height             : %f cm", &children[count].height);
-                else if (strstr(line, "Weight"))
+                } else if (strstr(line, "Weight")) {
                     sscanf(line, "Weight             : %f kg", &children[count].weight);
-                else if (strstr(line, "Blood Type"))
+                } else if (strstr(line, "Blood Type")) {
                     sscanf(line, "Blood Type         : %s", children[count].bloodType);
-                else if (strstr(line, "Allergies"))
+                } else if (strstr(line, "Allergies")) {
                     sscanf(line, "Allergies          : %[^\n]", children[count].allergies);
-                else if (strstr(line, "Medical Conditions"))
+                } else if (strstr(line, "Medical Conditions")) {
                     sscanf(line, "Medical Conditions : %[^\n]", children[count].medicalConditions);
-                else if (strstr(line, "Education Level"))
+                } else if (strstr(line, "Education Level")) {
                     sscanf(line, "Education Level    : %[^\n]", children[count].educationLevel);
-                else if (strstr(line, "Hobbies"))
+                } else if (strstr(line, "Hobbies")) {
                     sscanf(line, "Hobbies            : %[^\n]", children[count].hobbies);
-                else if (strstr(line, "Languages Spoken"))
+                } else if (strstr(line, "Languages Spoken")) {
                     sscanf(line, "Languages Spoken   : %[^\n]", children[count].languagesSpoken);
-                else if (strstr(line, "Status")) {
+                } else if (strstr(line, "Status")) {
                     char status[20];
                     sscanf(line, "Status             : %s", status);
                     children[count].adopted = (strcmp(status, "Adopted") == 0);
                     count++;
+                    if (count >= 100) {
+                        printf("Warning: Maximum number of children reached (100).\n");
+                        break;
+                    }
                     break;
                 }
             }
         }
     }
     fclose(childFile);
+
+    if (count == 0) {
+        printf("No children records found.\n");
+        return;
+    }
 
     int choice;
     char filter[20];
@@ -924,66 +922,87 @@ void adoptChild(const char *userEmail) {
         printf("5. Adopt a child by ID\n");
         printf("6. Go back\n");
         printf("Enter your choice: ");
-        scanf("%d", &choice);
+        if (scanf("%d", &choice) != 1) {
+            printf("Invalid input! Please enter a number.\n");
+            while (getchar() != '\n'); 
+            continue;
+        }
         getchar(); 
 
         clearScreen();
 
-        if (choice == 1) {
-            for (i = 0; i < count; i++) {
-                if (!children[i].adopted)
-                    displayChildDetails(children[i]);
-            }
-        } 
-        else if (choice == 2) {
-            printf("Enter gender (M/F): ");
-            scanf("%s", filter);
-            getchar();
-            for (i = 0; i < count; i++) {
-                if (!children[i].adopted && strcasecmp(children[i].gender, filter) == 0)
-                    displayChildDetails(children[i]);
-            }
-        } 
-        else if (choice == 3) {
-            printf("Enter blood type (A, B, AB, O): ");
-            scanf("%s", filter);
-            getchar();
-            for (i = 0; i < count; i++) {
-                if (!children[i].adopted && strcasecmp(children[i].bloodType, filter) == 0)
-                    displayChildDetails(children[i]);
-            }
-        } 
-        else if (choice == 4) {
-            char searchID[20];
-            printf("Enter Child ID: ");
-            scanf("%s", searchID);
-            getchar();
-
-            int found = 0;
-            for (i = 0; i < count; i++) {
-                if (strcmp(children[i].id, searchID) == 0) {
-                    displayChildDetails(children[i]);
-                    found = 1;
-                    break;
+        switch (choice) {
+            case 1:
+                for (i = 0; i < count; i++) {
+                    if (!children[i].adopted)
+                        displayChildDetails(children[i]);
                 }
+                break;
+
+            case 2:
+                printf("Enter gender (M/F): ");
+                scanf("%s", filter);
+                getchar();
+                for (i = 0; i < count; i++) {
+                    if (!children[i].adopted && strcasecmp(children[i].gender, filter) == 0)
+                        displayChildDetails(children[i]);
+                }
+                break;
+
+            case 3:
+                printf("Enter blood type (A, B, AB, O): ");
+                scanf("%s", filter);
+                getchar();
+                for (i = 0; i < count; i++) {
+                    if (!children[i].adopted && strcasecmp(children[i].bloodType, filter) == 0)
+                        displayChildDetails(children[i]);
+                }
+                break;
+
+            case 4: {
+                char searchID[20];
+                printf("Enter Child ID: ");
+                scanf("%s", searchID);
+                getchar();
+
+                int found = 0;
+                for (i = 0; i < count; i++) {
+                    if (strcmp(children[i].id, searchID) == 0) {
+                        displayChildDetails(children[i]);
+                        found = 1;
+                        break;
+                    }
+                }
+                if (!found)
+                    printf("No child found with ID %s\n", searchID);
+                break;
             }
-            if (!found)
-                printf("No child found with ID %s\n", searchID);
-        } 
-        else if (choice == 5) {
-            char chosenID[20];
-            printf("Enter the ID of the child to adopt: ");
-            scanf("%s", chosenID);
-            getchar();
 
-            int found = 0;
-            for (i = 0; i < count; i++) {
-                if (strcmp(children[i].id, chosenID) == 0 && !children[i].adopted) {
-                    children[i].adopted = 1;
-                    found = 1;
+            case 5: {
+                char chosenID[20];
+                printf("Enter the ID of the child to adopt: ");
+                scanf("%s", chosenID);
+                getchar();
 
-                    FILE *adoptFile = fopen("D:\\Programs\\Child Adoption Database\\Adoptions.txt", "a");
-                    if (adoptFile) {
+                int found = 0;
+                for (i = 0; i < count; i++) {
+                    if (strcmp(children[i].id, chosenID) == 0) {  
+                        if (children[i].adopted) {  
+                            printf("This child has already been adopted.\n");
+                            found = 1;
+                            break;
+                        }
+
+                        children[i].adopted = 1;
+                        found = 1;
+
+                        
+                        FILE *adoptFile = fopen("C:\\Users\\L65X15W07\\Desktop\\Adoptions.txt", "a");
+                        if (!adoptFile) {
+                            printf("Error: Cannot open Adoptions.txt\n");
+                            return;
+                        }
+
                         fprintf(adoptFile, "=================================\n");
                         fprintf(adoptFile, "Parent Email      : %s\n", userEmail);
                         fprintf(adoptFile, "Child ID          : %s\n", children[i].id);
@@ -991,10 +1010,15 @@ void adoptChild(const char *userEmail) {
                         fprintf(adoptFile, "Adoption Date     : %s\n", __DATE__);
                         fprintf(adoptFile, "=================================\n\n");
                         fclose(adoptFile);
-                    }
 
-                    childFile = fopen("D:\\Programs\\Child Adoption Database\\Childrens.txt", "w");
-                    if (childFile) {
+                     
+                        childFile = fopen("C:\\Users\\L65X15W07\\Desktop\\Childrens.txt", "w");  
+                        if (!childFile) {
+                            printf("Error: Cannot rewrite Childrens.txt\n");
+                            return;
+                        }
+
+                       
                         for (j = 0; j < count; j++) {
                             fprintf(childFile, "=================================\n");
                             fprintf(childFile, "Child ID           : %s\n", children[j].id);
@@ -1014,21 +1038,24 @@ void adoptChild(const char *userEmail) {
                             fprintf(childFile, "=================================\n\n");
                         }
                         fclose(childFile);
-                    }
 
-                    printf("\nYou have successfully adopted %s!\n", children[i].name);
-                    break;
+                        printf("\nYou have successfully adopted %s!\n", children[i].name);
+                        break;
+                    }
                 }
+
+                if (!found) {
+                    printf("Invalid ID or child already adopted.\n");
+                }
+
+                break;
             }
 
-            if (!found)
-                printf("Invalid ID or child already adopted.\n");
-        } 
-        else if (choice == 6) {
-            break;
-        } 
-        else {
-            printf("Invalid choice.\n");
+            case 6:
+                return;
+
+            default:
+                printf("Invalid choice.\n");
         }
 
         printf("\nPress Enter to continue...");
@@ -1036,8 +1063,10 @@ void adoptChild(const char *userEmail) {
         clearScreen();
     }
 }
+
+
 void viewUsers() {
-    FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Users.txt", "r");
+    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Users.txt", "r");
 
     if (file == NULL) {
         printf("Error: Could not open Users.txt\n");
@@ -1070,7 +1099,7 @@ void viewUsers() {
 }
 void adminReviewApplications() {
     int i = 0, j, choice;
-    FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Applications.txt", "r");
+    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Applications.txt", "r");
     if (!file) {
         printf("Error: Could not open application file.\n");
         return;
@@ -1078,26 +1107,28 @@ void adminReviewApplications() {
 
     User applications[100];
     int count = 0;
+    char line[256];
     User temp;
 
-    while (fscanf(file, "=================================\n") == 1 ||
-           fscanf(file, "=================================\n") != EOF) {
+    while (fgets(line, sizeof(line), file)) {
+        if (strcmp(line, "=================================\n") != 0)
+            continue;
 
-        if (fscanf(file, "Email              : %[^\n]\n", temp.email) != 1) break;
-        fscanf(file, "First Name         : %[^\n]\n", temp.firstName);
-        fscanf(file, "Last Name          : %[^\n]\n", temp.lastName);
-        fscanf(file, "Age                : %d\n", &temp.age);
-        fscanf(file, "Address            : %[^\n]\n", temp.address);
-        fscanf(file, "Occupation         : %[^\n]\n", temp.occupation);
-        fscanf(file, "Phone              : %[^\n]\n", temp.phone);
-        fscanf(file, "Marital Status     : %[^\n]\n", temp.maritalStatus);
-        fscanf(file, "Household Size     : %d\n", &temp.householdSize);
-        fscanf(file, "Criminal Record    : %[^\n]\n", temp.criminalRecord);
-        fscanf(file, "Housing Status     : %[^\n]\n", temp.housingStatus);
-        fscanf(file, "Has Children       : %[^\n]\n", temp.hasChildren);
-        fscanf(file, "Reason for Adopting: %[^\n]\n", temp.reason);
-        fscanf(file, "Status             : %[^\n]\n", temp.status);
-        fscanf(file, "=================================\n");
+        fgets(line, sizeof(line), file); sscanf(line, "Email              : %[^\n]", temp.email);
+        fgets(line, sizeof(line), file); sscanf(line, "First Name         : %[^\n]", temp.firstName);
+        fgets(line, sizeof(line), file); sscanf(line, "Last Name          : %[^\n]", temp.lastName);
+        fgets(line, sizeof(line), file); sscanf(line, "Age                : %d", &temp.age);
+        fgets(line, sizeof(line), file); sscanf(line, "Address            : %[^\n]", temp.address);
+        fgets(line, sizeof(line), file); sscanf(line, "Occupation         : %[^\n]", temp.occupation);
+        fgets(line, sizeof(line), file); sscanf(line, "Phone              : %[^\n]", temp.phone);
+        fgets(line, sizeof(line), file); sscanf(line, "Marital Status     : %[^\n]", temp.maritalStatus);
+        fgets(line, sizeof(line), file); sscanf(line, "Household Size     : %d", &temp.householdSize);
+        fgets(line, sizeof(line), file); sscanf(line, "Criminal Record    : %[^\n]", temp.criminalRecord);
+        fgets(line, sizeof(line), file); sscanf(line, "Housing Status     : %[^\n]", temp.housingStatus);
+        fgets(line, sizeof(line), file); sscanf(line, "Has Children       : %[^\n]", temp.hasChildren);
+        fgets(line, sizeof(line), file); sscanf(line, "Reason for Adopting: %[^\n]", temp.reason);
+        fgets(line, sizeof(line), file); sscanf(line, "Status             : %[^\n]", temp.status);
+        fgets(line, sizeof(line), file); 
 
         applications[count++] = temp;
     }
@@ -1124,40 +1155,41 @@ void adminReviewApplications() {
         scanf("%d", &choice);
         clearScreen();
 
-		if (choice == 1) {
-		    strcpy(applications[i].status, "Approved");
-		    printf("Application Approved!\n");
-		
-		    FILE *userFile = fopen("D:\\Programs\\Child Adoption Database\\Users.txt", "a");
-		    if (userFile) {
-		        fprintf(userFile, "========================================\n");
-		        fprintf(userFile, "Name       : %s %s\n", applications[i].firstName, applications[i].lastName);
-		        fprintf(userFile, "Age        : %d\n", applications[i].age);
-		        fprintf(userFile, "Email      : %s\n", applications[i].email);
-		        fprintf(userFile, "Occupation : %s\n", applications[i].occupation);
-		        fprintf(userFile, "Phone      : %s\n", applications[i].phone);
-		        fprintf(userFile, "Address    : %s\n", applications[i].address);
-		        fprintf(userFile, "========================================\n\n");
-		        fclose(userFile);
-		    } else {
-		        printf("Error: Could not open Users.txt for writing.\n");
-		    }   i++; 
+        if (choice == 1) {
+            strcpy(applications[i].status, "Approved");
+            printf("Application Approved!\n");
+
+            FILE *userFile = fopen("C:\\Users\\L65X15W07\\Desktop\\Users.txt", "a");
+            if (userFile) {
+                fprintf(userFile, "========================================\n");
+                fprintf(userFile, "Name       : %s %s\n", applications[i].firstName, applications[i].lastName);
+                fprintf(userFile, "Age        : %d\n", applications[i].age);
+                fprintf(userFile, "Email      : %s\n", applications[i].email);
+                fprintf(userFile, "Occupation : %s\n", applications[i].occupation);
+                fprintf(userFile, "Phone      : %s\n", applications[i].phone);
+                fprintf(userFile, "Address    : %s\n", applications[i].address);
+                fprintf(userFile, "========================================\n\n");
+                fclose(userFile);
+            } else {
+                printf("Error: Could not open Users.txt for writing.\n");
+            }
+            i++;
         } else if (choice == 2) {
             strcpy(applications[i].status, "Rejected");
             printf("Application Rejected.\n");
-		    i++;
+            i++;
         } else if (choice == 3) {
             printf("You have skipped the application.\n");
-    		i++;
-		} else if (choice == 4) {
-		    if (i > 0) {
-		        i--;
-		        printf("Going back to previous application...\n");
-		    } else {
-		        printf("Already at the first application.\n");
-		    }
-		    Sleep(1500);
-		    continue;
+            i++;
+        } else if (choice == 4) {
+            if (i > 0) {
+                i--;
+                printf("Going back to previous application...\n");
+            } else {
+                printf("Already at the first application.\n");
+            }
+            Sleep(1500);
+            continue;
         } else if (choice == 5) {
             char searchEmail[100];
             printf("Enter the email to search for: ");
@@ -1181,21 +1213,23 @@ void adminReviewApplications() {
             printf("Press any key to go back to the application review.\n");
             getchar(); getchar();
             continue;
-            } else if (choice == 6) {
+        } else if (choice == 6) {
             printf("Going back to the main menu...\n");
             Sleep(2000);      
             clearScreen();     
             return;  
-	        } else {
-	            printf("Invalid choice. Please select 1, 2, 3, 4, or 5.\n");
-	            continue;
-	        }
+        } else {
+            printf("Invalid choice. Please select 1, 2, 3, 4, 5, or 6.\n");
+            continue;
+        }
 
-	        printf("\nPress any key to continue to the next application...\n");
-	        getchar(); getchar();
-			clearScreen();  
-	    }
-    file = fopen("D:\\Programs\\Child Adoption Database\\Applications.txt", "w");
+        printf("\nPress any key to continue to the next application...\n");
+        getchar(); getchar();
+        clearScreen();  
+    }
+
+    
+    file = fopen("C:\\Users\\L65X15W07\\Desktop\\Applications.txt", "w");
     if (!file) {
         printf("Error: Could not save updated applications.\n");
         return;
@@ -1223,8 +1257,9 @@ void adminReviewApplications() {
     fclose(file);
     printf("All updates saved!\n");
 }
+
 int checkApplicationStatus(const char *email) {
-    FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Applications.txt", "r");
+    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Applications.txt", "r");
     if (!file) {
         printf("Error: Could not open Applications.txt\n");
         return -2;
@@ -1232,37 +1267,42 @@ int checkApplicationStatus(const char *email) {
 
     User temp;
 
-    while (fscanf(file, "=================================\n") == 0) {
-        fscanf(file, "Email              : %[^\n]\n", temp.email);
-        fscanf(file, "First Name         : %[^\n]\n", temp.firstName);
-        fscanf(file, "Last Name          : %[^\n]\n", temp.lastName);
-        fscanf(file, "Age                : %d\n", &temp.age);
-        fscanf(file, "Address            : %[^\n]\n", temp.address);
-        fscanf(file, "Occupation         : %[^\n]\n", temp.occupation);
-        fscanf(file, "Phone              : %[^\n]\n", temp.phone);
-        fscanf(file, "Marital Status     : %[^\n]\n", temp.maritalStatus);
-        fscanf(file, "Household Size     : %d\n", &temp.householdSize);
-        fscanf(file, "Criminal Record    : %[^\n]\n", temp.criminalRecord);
-        fscanf(file, "Housing Status     : %[^\n]\n", temp.housingStatus);
-        fscanf(file, "Has Children       : %[^\n]\n", temp.hasChildren);
-        fscanf(file, "Reason for Adopting: %[^\n]\n", temp.reason);
-        fscanf(file, "Status             : %[^\n]\n", temp.status);
-        fscanf(file, "=================================\n");
+   char line[200];  
 
-        if (strcmp(temp.email, email) == 0) {
-            fclose(file);
-            if (strcmp(temp.status, "Approved") == 0)
-                return 1;
-            else if (strcmp(temp.status, "Rejected") == 0)
-                return -1;
-            else
-                return 0;
-        }
+while (fgets(line, sizeof(line), file)) {
+    if (strcmp(line, "=================================\n") != 0)
+        continue;  
+
+    
+    fscanf(file, "Email              : %[^\n]\n", temp.email);
+    fscanf(file, "First Name         : %[^\n]\n", temp.firstName);
+    fscanf(file, "Last Name          : %[^\n]\n", temp.lastName);
+    fscanf(file, "Age                : %d\n", &temp.age);
+    fscanf(file, "Address            : %[^\n]\n", temp.address);
+    fscanf(file, "Occupation         : %[^\n]\n", temp.occupation);
+    fscanf(file, "Phone              : %[^\n]\n", temp.phone);
+    fscanf(file, "Marital Status     : %[^\n]\n", temp.maritalStatus);
+    fscanf(file, "Household Size     : %d\n", &temp.householdSize);
+    fscanf(file, "Criminal Record    : %[^\n]\n", temp.criminalRecord);
+    fscanf(file, "Housing Status     : %[^\n]\n", temp.housingStatus);
+    fscanf(file, "Has Children       : %[^\n]\n", temp.hasChildren);
+    fscanf(file, "Reason for Adopting: %[^\n]\n", temp.reason);
+    fscanf(file, "Status             : %[^\n]\n", temp.status);
+    fgets(line, sizeof(line), file);  
+
+    
+    if (strcmp(temp.email, email) == 0) {
+        fclose(file);
+        if (strcmp(temp.status, "Approved") == 0) return 1;
+        else if (strcmp(temp.status, "Rejected") == 0) return -1;
+        else return 0; 
     }
+}
 
     fclose(file);
     return -2; 
 }
+
 void adminMenu() {
     int choice;
 
@@ -1290,6 +1330,8 @@ void adminMenu() {
         switch (choice) {
             case 1:
                 addChild();
+                         
+   				 loadChildren();
                 break;
             case 2:
                 deleteChild();
@@ -1365,7 +1407,7 @@ void adminLogin() {
 }
 
 void loadUsers() {
-    FILE *file = fopen("D:\\Programs\\Child Adoption Database\\Users.txt", "r");
+    FILE *file = fopen("C:\\Users\\L65X15W07\\Desktop\\Users.txt", "r");
     if (!file) {
         printf("No user data found. Starting fresh.\n");
         return;
