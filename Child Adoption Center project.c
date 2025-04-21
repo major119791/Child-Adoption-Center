@@ -438,7 +438,6 @@ void userLogin() {
                         break;
                     } else if (strstr(status, "Rejected")) {
                         printf("Your application was rejected.\n");
-                        printf("If you believe this was a mistake, contact support@adoptioncenter.com\n");
                         Sleep(3000);
                         clearScreen();
                         break;
