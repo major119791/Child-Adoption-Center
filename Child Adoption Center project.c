@@ -261,7 +261,6 @@ void adoptionMenu() {
     do {
         clearScreen();  
 
-        
         printf("=====================================================\n");
         printf(" __          __  _                          _      \n");
         printf(" \\ \\        / / | |                        | |     \n");
@@ -271,23 +270,24 @@ void adoptionMenu() {
         printf("     \\/  \\/ \\___|_|\\___\\___/|_| |_| |_|\\___(_)\n");
         printf("=====================================================\n");
 
-        
         printf("   [1] Adopt a Child\n");
         printf("   [2] View Adopted Children\n");
         printf("   [3] Submit Application\n");
         printf("   [4] Notification\n");
-        printf("   [5] Exit\n");
+        printf("   [5] Message Admin\n");
+        printf("   [6] View Messages from Admin\n");
+        printf("   [7] Exit\n");
         printf("-----------------------------------------------------\n");
-        printf("Enter your choice (1-5): ");
+        printf("Enter your choice (1-7): ");
 
         if (scanf("%d", &choice) != 1) {
-            printf("\nInvalid input. Please enter a number between 1 and 4.\n");
+            printf("\nInvalid input. Please enter a number between 1 and 7.\n");
             while (getchar() != '\n');  
             Sleep(1500);
             continue;
         }
 
-        clearScreen();  
+        clearScreen();
 
         switch (choice) {
             case 1:
@@ -319,26 +319,75 @@ void adoptionMenu() {
             case 3:
                 submitApplication();
                 break;
-                
+
             case 4:
-				checkNotifications(loggedInUser.email);
-    			break;   
+                checkNotifications(loggedInUser.email);
+                break;
 
             case 5:
+                sendMessage(loggedInUser.email, "admin@system.com");
+                break;
+
+            case 6:
+                viewMessages(loggedInUser.email, "admin@system.com");
+                break;
+
+            case 7:
                 printf("Exiting adoption section...\n");
                 Sleep(1500);
                 break;
 
             default:
-                printf("\nInvalid choice. Please select a number between 1 and 4.\n");
+                printf("\nInvalid choice. Please select a number between 1 and 7.\n");
                 Sleep(1500);
         }
 
         clearScreen();
 
-    } while (choice != 5);
+    } while (choice != 7);
 }
 
+
+void sendMessage(const char *senderEmail, const char *receiverEmail) {
+    FILE *file = fopen("messages.txt", "a");
+    if (!file) {
+        printf("Error opening message file.\n");
+        return;
+    }
+
+    char message[256];
+    printf("Enter your message: ");
+    getchar();  
+    fgets(message, sizeof(message), stdin);
+    message[strcspn(message, "\n")] = 0;  
+
+    fprintf(file, "%s|%s|%s\n", senderEmail, receiverEmail, message);
+    fclose(file);
+    printf("Message sent!\n");
+}
+
+void viewMessages(const char *user1, const char *user2) {
+    FILE *file = fopen("messages.txt", "r");
+    if (!file) {
+        printf("No messages found.\n");
+        return;
+    }
+
+    char line[512];
+    char sender[100], receiver[100], message[300];
+    printf("\n--- Chat Between %s and %s ---\n", user1, user2);
+    while (fgets(line, sizeof(line), file)) {
+        if (sscanf(line, "%99[^|]|%99[^|]|%299[^\n]", sender, receiver, message) == 3) {
+            if ((strcmp(sender, user1) == 0 && strcmp(receiver, user2) == 0) ||
+                (strcmp(sender, user2) == 0 && strcmp(receiver, user1) == 0)) {
+                printf("%s: %s\n", sender, message);
+            }
+        }
+    }
+    fclose(file);
+    printf("------------------------------\n");
+    system("pause");
+}
 
 
 void checkNotifications(const char *email) {
@@ -440,12 +489,13 @@ void adminMenu() {
         printf("   [5] View Registered Users\n");
         printf("   [6] Review Applications\n");
         printf("   [7] Review Adoption\n");
-        printf("   [8] Exit\n");
+        printf("   [8] Chat With User\n");
+        printf("   [9] Exit\n");
         printf("-----------------------------------------------------\n");
-        printf("Enter your choice (1-8): ");
+        printf("Enter your choice (1-9): ");
         
         if (scanf("%d", &choice) != 1) {
-            printf("\nInvalid input. Please enter a number between 1 and 8.\n");
+            printf("\nInvalid input. Please enter a number between 1 and 9.\n");
             while (getchar() != '\n'); 
             Sleep(1500);
             continue;
@@ -475,17 +525,114 @@ void adminMenu() {
             case 7:
                 reviewAdoptions();
                 break;
+            
             case 8:
+            	adminChatWithUser();
+            	break;
+			    
+            case 9:
                 printf("Returning to main menu...\n");
                 Sleep(1500);
                 clearScreen();
                 return;
             default:
-                printf("\nInvalid choice. Please select a number between 1 and 8.\n");
+                printf("\nInvalid choice. Please select a number between 1 and 9.\n");
                 Sleep(1500);
                 clearScreen();
         }
     }
+}
+
+void adminChatWithUser() {
+    FILE *userFile = fopen("users.txt", "r");
+    if (!userFile) {
+        printf("Error: Could not open users.txt\n");
+        return;
+    }
+
+    char email[100], password[100], firstName[50], lastName[50], line[256];
+    int age, userCount = 0;
+    char emails[100][100];
+    int i;
+
+    clearScreen();
+    printf("========================================\n");
+    printf("         ?? REGISTERED USERS\n");
+    printf("========================================\n");
+
+    while (fgets(line, sizeof(line), userFile)) {
+        if (sscanf(line, "%99[^|]|%99[^|]|%49[^|]|%49[^|]|%d", 
+                   email, password, firstName, lastName, &age) == 5) {
+            printf(" %s %s |  %s |  Age: %d\n", firstName, lastName, email, age);
+            strcpy(emails[userCount++], email);
+        }
+    }
+    fclose(userFile);
+
+    if (userCount == 0) {
+        printf("\n??  No users found.\n");
+        return;
+    }
+
+    char targetEmail[100];
+    int found = 0;
+
+    printf("\n----------------------------------------\n");
+    printf("Enter the user email to chat with: ");
+    getchar();
+    fgets(targetEmail, sizeof(targetEmail), stdin);
+    targetEmail[strcspn(targetEmail, "\n")] = 0;
+
+    for (i = 0; i < userCount; i++) {
+        if (strcmp(targetEmail, emails[i]) == 0) {
+            found = 1;
+            break;
+        }
+    }
+
+    if (!found) {
+        printf("\n? Error: Email not found among registered users.\n");
+        Sleep(2000);
+        return;
+    }
+
+    int option;
+    do {
+        clearScreen();
+        printf("========================================\n");
+        printf("?? Chat with: %s\n", targetEmail);
+        printf("========================================\n");
+        printf("[1]  Send Message\n");
+        printf("[2]  View Messages\n");
+        printf("[3]  Back\n");
+        printf("----------------------------------------\n");
+        printf("Choice: ");
+
+        if (scanf("%d", &option) != 1) {
+            printf("Invalid input. Please enter a number.\n");
+            while (getchar() != '\n'); // clear buffer
+            Sleep(1500);
+            continue;
+        }
+
+        clearScreen();
+
+        switch (option) {
+            case 1:
+                sendMessage("admin@system.com", targetEmail);
+                Sleep(1500);
+                break;
+            case 2:
+                viewMessages("admin@system.com", targetEmail);
+                break;
+            case 3:
+                break;
+            default:
+                printf("Invalid option. Try again.\n");
+                Sleep(1500);
+        }
+
+    } while (option != 3);
 }
 
 
