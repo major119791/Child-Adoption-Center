@@ -336,7 +336,8 @@ void adminMenu() {
         printf("4. View Adopted Children\n");
         printf("5. View Registered Users\n");
         printf("6. Review Applications\n");
-        printf("7. Exit to Main Menu\n");
+        printf("7. Review Adoption\n");
+        printf("8. Exit\n");
         printf("Choice: ");
 
         if (scanf("%d", &choice) != 1) {
@@ -368,7 +369,12 @@ void adminMenu() {
             case 6:
                 reviewApplications();
                 break;
-            case 7:
+                
+            case 7: 
+				reviewAdoptions();
+				break; 
+				   
+            case 8:
                 printf("Returning to main menu...\n");
                 Sleep(1500);
                 clearScreen();
@@ -569,9 +575,9 @@ void deleteChild() {
         printf("\nEnter the number of the child to delete (0 to cancel): ");
         if (scanf("%d", &choice) != 1 || choice < 0 || choice > tempCount) {
             printf("Invalid input. Please enter a number between 0 and %d.\n", tempCount);
-            while (getchar() != '\n'); // Clear buffer
+            while (getchar() != '\n'); 
             Sleep(2000);
-            choice = -1; // Reset choice
+            choice = -1; 
         }
     } while (choice < 0 || choice > tempCount);
 
@@ -634,12 +640,13 @@ void deleteChild() {
 
 
 void viewAllChildren() {
-    FILE *file;
+    FILE *file, *pendingFile;
     char filePath[MAX_PATH];
     char line[512];
-    Child children[MAX_CHILDREN]; 
-    int childCount = 0;
-    int currentIndex = 0; 
+    Child children[MAX_CHILDREN];
+    char pendingIDs[MAX_CHILDREN][10]; 
+    int childCount = 0, currentIndex = 0, pendingCount = 0;
+    int i;
 
     SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, filePath);
     strcat(filePath, "\\children.txt");
@@ -652,24 +659,42 @@ void viewAllChildren() {
     }
 
    
+    pendingFile = fopen("pending_adoptions.txt", "r");
+    if (pendingFile != NULL) {
+        while (fgets(line, sizeof(line), pendingFile)) {
+            sscanf(line, "%9[^|]", pendingIDs[pendingCount]);
+            pendingCount++;
+        }
+        fclose(pendingFile);
+    }
+
+    
     while (fgets(line, sizeof(line), file)) {
+        Child c;
         if (sscanf(line, "%7[^|]|%49[^|]|%9[^|]|%19[^|]|%d|%f|%f|%d|%4[^|]|%99[^|]|%199[^|]|%49[^|]|%99[^|]|%99[^\n]",
-                   children[childCount].id, children[childCount].name, children[childCount].gender, 
-                   children[childCount].birthDate, &children[childCount].age, 
-                   &children[childCount].height, &children[childCount].weight, 
-                   &children[childCount].adopted, children[childCount].bloodType, 
-                   children[childCount].allergies, children[childCount].medicalConditions, 
-                   children[childCount].educationLevel, children[childCount].hobbies, 
-                   children[childCount].languagesSpoken) == 14) {
-            childCount++;
-            if (childCount >= MAX_CHILDREN) break; 
+                   c.id, c.name, c.gender, c.birthDate, &c.age, &c.height, &c.weight, &c.adopted,
+                   c.bloodType, c.allergies, c.medicalConditions, c.educationLevel, c.hobbies, c.languagesSpoken) == 14) {
+
+           
+            int isPending = 0;
+            for (i = 0; i < pendingCount; i++) {
+                if (strcmp(c.id, pendingIDs[i]) == 0) {
+                    isPending = 1;
+                    break;
+                }
+            }
+
+            if (!isPending) {
+                children[childCount++] = c;
+                if (childCount >= MAX_CHILDREN) break;
+            }
         }
     }
 
     fclose(file);
 
     if (childCount == 0) {
-        printf("No child profiles found.\n");
+        printf("No available child profiles.\n");
         printf("\nPress Enter to return to the Admin Menu...");
         getchar();
         getchar();
@@ -679,53 +704,50 @@ void viewAllChildren() {
 
     while (1) {
         clearScreen();
-        
         printf("========= Child Profile %d of %d =========\n", currentIndex + 1, childCount);
-        printf("ID: %s\n", children[currentIndex].id);
-        printf("Name: %s\n", children[currentIndex].name);
-        printf("Gender: %s\n", children[currentIndex].gender);
-        printf("Birth Date: %s\n", children[currentIndex].birthDate);
-        printf("Age: %d\n", children[currentIndex].age);
-        printf("Height: %.2f cm\n", children[currentIndex].height);
-        printf("Weight: %.2f kg\n", children[currentIndex].weight);
-        printf("Adopted: %s\n", children[currentIndex].adopted ? "Yes" : "No");
-        printf("Blood Type: %s\n", children[currentIndex].bloodType);
-        printf("Allergies: %s\n", children[currentIndex].allergies);
-        printf("Medical Conditions: %s\n", children[currentIndex].medicalConditions);
-        printf("Education Level: %s\n", children[currentIndex].educationLevel);
-        printf("Hobbies: %s\n", children[currentIndex].hobbies);
-        printf("Languages Spoken: %s\n", children[currentIndex].languagesSpoken);
+        Child c = children[currentIndex];
+        printf("ID: %s\n", c.id);
+        printf("Name: %s\n", c.name);
+        printf("Gender: %s\n", c.gender);
+        printf("Birth Date: %s\n", c.birthDate);
+        printf("Age: %d\n", c.age);
+        printf("Height: %.2f cm\n", c.height);
+        printf("Weight: %.2f kg\n", c.weight);
+        printf("Adopted: %s\n", c.adopted ? "Yes" : "No");
+        printf("Blood Type: %s\n", c.bloodType);
+        printf("Allergies: %s\n", c.allergies);
+        printf("Medical Conditions: %s\n", c.medicalConditions);
+        printf("Education Level: %s\n", c.educationLevel);
+        printf("Hobbies: %s\n", c.hobbies);
+        printf("Languages Spoken: %s\n", c.languagesSpoken);
         printf("----------------------------------------\n");
 
-       
         printf("\nPress 'n' for Next, 'p' for Previous, or 'b' to Go Back to Admin Menu: ");
         char choice[10];
-		fgets(choice, sizeof(choice), stdin);
-		
-		choice[strcspn(choice, "\n")] = '\0';		
+        fgets(choice, sizeof(choice), stdin);
+        choice[strcspn(choice, "\n")] = '\0';
 
-		        if (strcmp(choice, "n") == 0 || strcmp(choice, "N") == 0) {
-		    if (currentIndex < childCount - 1) {
-		        currentIndex++;
-		    } else {
-		        printf("You are already at the last profile.\n");
-		        Sleep(1500);
-		    }
-		} else if (strcmp(choice, "p") == 0 || strcmp(choice, "P") == 0) {
-		    if (currentIndex > 0) {
-		        currentIndex--;
-		    } else {
-		        printf("You are already at the first profile.\n");
-		        Sleep(1500);
-		    }
-		} else if (strcmp(choice, "b") == 0 || strcmp(choice, "B") == 0) {
-		    break;
-		} else {
-		    printf("Invalid choice. Please enter 'n', 'p', or 'b'.\n");
-		    Sleep(1500);
-		}
+        if (strcmp(choice, "n") == 0 || strcmp(choice, "N") == 0) {
+            if (currentIndex < childCount - 1) currentIndex++;
+            else {
+                printf("You are already at the last profile.\n");
+                Sleep(1500);
+            }
+        } else if (strcmp(choice, "p") == 0 || strcmp(choice, "P") == 0) {
+            if (currentIndex > 0) currentIndex--;
+            else {
+                printf("You are already at the first profile.\n");
+                Sleep(1500);
+            }
+        } else if (strcmp(choice, "b") == 0 || strcmp(choice, "B") == 0) {
+            break;
+        } else {
+            printf("Invalid choice. Please enter 'n', 'p', or 'b'.\n");
+            Sleep(1500);
+        }
     }
 }
+
 
 void viewAdoptedChildren() {
     char filePath[MAX_PATH], line[256], id[10], name[50], parentEmail[100];
@@ -963,6 +985,140 @@ save_changes:
     Sleep(2000);
 }
 
+void reviewAdoptions() {
+    FILE *pendingFile = fopen("pending_adoptions.txt", "r");
+    if (!pendingFile) {
+        printf("Error: Could not open pending adoptions file.\n");
+        return;
+    }
+
+    
+    typedef struct {
+        char childID[10];
+        char childName[50];
+        char parentEmail[100];
+    } PendingRequest;
+
+    PendingRequest requests[100];
+    int count = 0;
+
+    char pendingLine[256];
+    while (fgets(pendingLine, sizeof(pendingLine), pendingFile)) {
+        if (sscanf(pendingLine, "%9[^|]|%49[^|]|%99[^\n]", 
+                   requests[count].childID, 
+                   requests[count].childName, 
+                   requests[count].parentEmail) == 3) {
+            count++;
+        }
+    }
+    fclose(pendingFile);
+
+    if (count == 0) {
+        printf("No pending adoption requests.\n");
+        return;
+    }
+	int i, j;
+    int index = 0;
+    char choice[10];
+    while (1) {
+        system("cls");  
+
+        printf("========== Adoption Review ==========\n");
+        printf("Request %d of %d\n", index + 1, count);
+        printf("Child ID    : %s\n", requests[index].childID);
+        printf("Child Name  : %s\n", requests[index].childName);
+        printf("Parent Email: %s\n", requests[index].parentEmail);
+        printf("-------------------------------------\n");
+        printf("Options: [A]pprove  [D]ecline  [N]ext  [P]revious  [B]ack to Menu\n");
+        printf("Enter your choice: ");
+        scanf(" %9s", choice);
+
+        if (strcasecmp(choice, "A") == 0) {
+            
+            FILE *childrenFile = fopen("children.txt", "r");
+            FILE *tempChildrenFile = fopen("children_temp.txt", "w");
+            FILE *adoptedFile = fopen("adopted_children.txt", "a");
+            if (!childrenFile || !tempChildrenFile || !adoptedFile) {
+                printf("Error opening necessary files.\n");
+                if (childrenFile) fclose(childrenFile);
+                if (tempChildrenFile) fclose(tempChildrenFile);
+                if (adoptedFile) fclose(adoptedFile);
+                return;
+            }
+
+            char line[512];
+            while (fgets(line, sizeof(line), childrenFile)) {
+                char currentID[10];
+                sscanf(line, "%9[^|]", currentID);
+                if (strcmp(currentID, requests[index].childID) == 0) {
+                    
+                    fprintf(adoptedFile, "%s|%s|%s\n", 
+                            requests[index].childID, 
+                            requests[index].childName, 
+                            requests[index].parentEmail);
+                } else {
+                    fputs(line, tempChildrenFile);  
+                }
+            }
+
+            fclose(childrenFile);
+            fclose(tempChildrenFile);
+            fclose(adoptedFile);
+
+            remove("children.txt");
+            rename("children_temp.txt", "children.txt");
+
+            
+            for (j = index; j < count - 1; j++) {
+                requests[j] = requests[j + 1];
+            }
+            count--;
+            if (index >= count) index = count - 1;
+            if (count == 0) break;
+
+        } else if (strcasecmp(choice, "D") == 0) {
+            
+            index++;
+            if (index >= count) index = 0;
+
+        } else if (strcasecmp(choice, "N") == 0) {
+            index = (index + 1) % count;
+
+        } else if (strcasecmp(choice, "P") == 0) {
+            index = (index - 1 + count) % count;
+
+        } else if (strcasecmp(choice, "B") == 0) {
+            break;
+
+        } else {
+            printf("Invalid input. Please try again.\n");
+            Sleep(1500);
+        }
+
+        if (count == 0) {
+            printf("All pending requests reviewed.\n");
+            break;
+        }
+    }
+
+    
+    FILE *finalPending = fopen("pending_adoptions.txt", "w");
+    if (!finalPending) {
+        printf("Error writing back pending requests.\n");
+        return;
+    }
+    for (i = 0; i < count; i++) {
+        fprintf(finalPending, "%s|%s|%s\n", 
+                requests[i].childID, 
+                requests[i].childName, 
+                requests[i].parentEmail);
+    }
+    fclose(finalPending);
+
+    printf("Review process complete.\n");
+    Sleep(2000);
+}
+
 
 //User menu funtions
 
@@ -1054,10 +1210,13 @@ void AdoptChildMenu() {
 
 void filterChildren() {
     FILE *file = fopen("children.txt", "r");
+    FILE *pendingFile = fopen("pending_adoptions.txt", "r");
     char line[512];
     int choice, matchCount = 0;
     char search[50];
-    int i;
+    int i, j;
+    char pendingIDs[MAX_CHILDREN][10];
+    int pendingCount = 0;
     Child matches[MAX_MATCHES];
 
     if (!file) {
@@ -1065,31 +1224,36 @@ void filterChildren() {
         return;
     }
 
-   
+    if (pendingFile) {
+        while (fgets(line, sizeof(line), pendingFile)) {
+            sscanf(line, "%9[^|]", pendingIDs[pendingCount++]);
+        }
+        fclose(pendingFile);
+    }
+
     while (1) {
         printf("Filter by:\n1. Blood Type\n2. Age\n3. Gender\nChoice: ");
         if (scanf("%d", &choice) != 1 || choice < 1 || choice > 3) {
             printf("Invalid choice. Please enter 1, 2, or 3.\n");
-            while (getchar() != '\n'); 
+            while (getchar() != '\n');
         } else {
             break;
         }
     }
 
-    getchar(); 
+    getchar();
 
-    
     while (1) {
         printf("Enter search term: ");
         fgets(search, sizeof(search), stdin);
         search[strcspn(search, "\n")] = '\0';
 
-        if (choice == 1) { 
+        if (choice == 1) {
             if (strlen(search) < 1 || strlen(search) > 4) {
                 printf("Invalid blood type format. Try again.\n");
                 continue;
             }
-        } else if (choice == 2) { // Age
+        } else if (choice == 2) {
             int validAge = 1;
             for (i = 0; i < strlen(search); i++) {
                 if (!isdigit(search[i])) {
@@ -1101,13 +1265,13 @@ void filterChildren() {
                 printf("Invalid age. Please enter a positive number.\n");
                 continue;
             }
-        } else if (choice == 3) { 
+        } else if (choice == 3) {
             if (strcasecmp(search, "Male") != 0 && strcasecmp(search, "Female") != 0) {
                 printf("Invalid gender. Please enter 'Male' or 'Female'.\n");
                 continue;
             }
         }
-        break; 
+        break;
     }
 
     printf("\n%-4s %-10s %-20s %-5s %-10s %-10s %-10s\n", "No", "ID", "Name", "Age", "Gender", "BloodType", "Adopted");
@@ -1119,6 +1283,16 @@ void filterChildren() {
                c.id, c.name, c.gender, c.birthDate, &c.age, &c.height, &c.weight, &c.adopted,
                c.bloodType, c.allergies, c.medicalConditions, c.educationLevel,
                c.hobbies, c.languagesSpoken);
+
+        int isPending = 0;
+        for (j = 0; j < pendingCount; j++) {
+            if (strcmp(c.id, pendingIDs[j]) == 0) {
+                isPending = 1;
+                break;
+            }
+        }
+
+        if (isPending) continue;
 
         int match = 0;
         if (choice == 1 && strcasecmp(c.bloodType, search) == 0)
@@ -1148,7 +1322,7 @@ void filterChildren() {
     printf("\nEnter the number of a child to view full details (0 to cancel): ");
     if (scanf("%d", &selection) != 1 || selection < 0 || selection > matchCount) {
         printf("Invalid selection.\n");
-        while (getchar() != '\n'); 
+        while (getchar() != '\n');
         return;
     }
 
@@ -1178,18 +1352,18 @@ void filterChildren() {
     system("pause");
 }
 
+
 void adoptChild() {
-    FILE *file, *tempFile, *adoptedFile;
-    char filePath[MAX_PATH], tempPath[MAX_PATH], adoptedPath[MAX_PATH];
+    FILE *file;
+    FILE *pendingFile;
+    char filePath[MAX_PATH];
     char line[512], childID[10];
     int found = 0;
+    char pendingIDs[MAX_CHILDREN][10];
+    int pendingCount = 0;
 
     SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, filePath);
-    strcpy(tempPath, filePath);
-    strcpy(adoptedPath, filePath);
     strcat(filePath, "\\children.txt");
-    strcat(tempPath, "\\children_temp.txt");
-    strcat(adoptedPath, "\\adopted_children.txt");
 
     file = fopen(filePath, "r");
     if (!file) {
@@ -1198,8 +1372,17 @@ void adoptChild() {
     }
 
     
+    pendingFile = fopen("pending_adoptions.txt", "r");
+    if (pendingFile) {
+        while (fgets(line, sizeof(line), pendingFile)) {
+            sscanf(line, "%9[^|]", pendingIDs[pendingCount++]);
+        }
+        fclose(pendingFile);
+    }
+
     Child tempChildren[MAX_CHILDREN];
     int total = 0;
+    int j;
     printf("=========== Available Children ===========\n");
     printf("%-10s %-20s %-5s\n", "Child ID", "Name", "Age");
     printf("------------------------------------------\n");
@@ -1211,8 +1394,18 @@ void adoptChild() {
                    &child.adopted, child.bloodType, child.allergies, child.medicalConditions,
                    child.educationLevel, child.hobbies, child.languagesSpoken) == 14) {
             if (child.adopted == 0) {
-                printf("%-10s %-20s %-5d\n", child.id, child.name, child.age);
-                tempChildren[total++] = child;
+                int isPending = 0;
+                for (j = 0; j < pendingCount; j++) {
+                    if (strcmp(child.id, pendingIDs[j]) == 0) {
+                        isPending = 1;
+                        break;
+                    }
+                }
+
+                if (!isPending) {
+                    printf("%-10s %-20s %-5d\n", child.id, child.name, child.age);
+                    tempChildren[total++] = child;
+                }
             }
         }
     }
@@ -1224,7 +1417,6 @@ void adoptChild() {
         return;
     }
 
-    
     printf("\nEnter the Child ID you want to adopt (or 'b' to go back): ");
     scanf(" %9s", childID);
 
@@ -1234,7 +1426,6 @@ void adoptChild() {
         return;
     }
 
-    
     int i;
     for (i = 0; i < total; i++) {
         if (strcmp(tempChildren[i].id, childID) == 0) {
@@ -1260,33 +1451,16 @@ void adoptChild() {
             scanf(" %9s", confirm);
 
             if (strcmp(confirm, "yes") == 0 || strcmp(confirm, "YES") == 0) {
-                file = fopen(filePath, "r");
-                tempFile = fopen(tempPath, "w");
-                adoptedFile = fopen(adoptedPath, "a");
-
-                if (!file || !tempFile || !adoptedFile) {
-                    printf("File error during adoption process.\n");
+                FILE *pendingFile = fopen("pending_adoptions.txt", "a");
+                if (!pendingFile) {
+                    printf("Error: Could not save pending adoption request.\n");
                     return;
                 }
 
-                while (fgets(line, sizeof(line), file)) {
-                    Child child;
-                    sscanf(line, "%7[^|]|", child.id);
-                    if (strcmp(child.id, childID) != 0) {
-                        fputs(line, tempFile);
-                    }
-                }
+                fprintf(pendingFile, "%s|%s|%s\n", tempChildren[i].id, tempChildren[i].name, loggedInUser.email);
+                fclose(pendingFile);
 
-                fprintf(adoptedFile, "%s|%s|%s\n", tempChildren[i].id, tempChildren[i].name, loggedInUser.email);
-
-                fclose(file);
-                fclose(tempFile);
-                fclose(adoptedFile);
-
-                remove(filePath);
-                rename(tempPath, filePath);
-
-                printf("\n? Child %s has been successfully adopted!\n", tempChildren[i].name);
+                printf("\nYour adoption request for child %s has been submitted for admin approval.\n", tempChildren[i].name);
             } else {
                 printf("\nAdoption cancelled.\n");
             }
@@ -1296,11 +1470,13 @@ void adoptChild() {
     }
 
     if (!found) {
-        printf("\n? No available child found with ID: %s\n", childID);
+        printf("\nNo available child found with ID: %s\n", childID);
     }
 
     Sleep(3000);
 }
+
+
 
 void viewMyAdoptedChildren() {
     char filePath[MAX_PATH], line[256];
