@@ -1518,7 +1518,7 @@ void reviewAdoptions() {
                             requests[index].childID, 
                             requests[index].childName, 
                             requests[index].parentEmail);
-                    // Notify parent of approval
+                    
                     fprintf(notifFile, "%s|%s|Approved\n", requests[index].parentEmail, requests[index].childName);
                 } else {
                     fputs(line, tempChildrenFile);  
