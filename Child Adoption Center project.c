@@ -25,7 +25,8 @@ typedef struct {
     char housingStatus[10];     
     char hasChildren[10];       
     char reason[200];           
-    char status[20];            
+    char status[20];
+	struct User *next;           
 } User;
 
 
@@ -45,6 +46,11 @@ typedef struct {
     char hobbies[100];
     char languagesSpoken[100];
 } Child;
+
+typedef struct UserNode {
+    User user;
+    struct UserNode* next;
+} UserNode;
 
 Child children[MAX_CHILDREN];
 int childCount = 0;
@@ -349,22 +355,60 @@ void adoptionMenu() {
 
 
 void sendMessage(const char *senderEmail, const char *receiverEmail) {
+    int choice;
+
+    printf("Do you want to send a message to %s?\n", receiverEmail);
+    printf("[1] Yes, proceed to chat\n");
+    printf("[0] No, go back to menu\n");
+    printf("Choice: ");
+
+    if (scanf("%d", &choice) != 1) {
+        printf("Invalid input. Please enter 1 or 0.\n");
+        while (getchar() != '\n'); // Clear input buffer
+        Sleep(1500);
+        return;
+    }
+
+    if (choice != 0 && choice != 1) {
+        printf("Invalid option. Please choose either 1 or 0.\n");
+        Sleep(1500);
+        return;
+    }
+
+    if (choice == 0) {
+        printf("Returning to menu...\n");
+        Sleep(1500);
+        return;
+    }
+
+    
     FILE *file = fopen("messages.txt", "a");
     if (!file) {
         printf("Error opening message file.\n");
+        Sleep(1500);
         return;
     }
 
     char message[256];
     printf("Enter your message: ");
-    getchar();  
+    getchar(); 
     fgets(message, sizeof(message), stdin);
-    message[strcspn(message, "\n")] = 0;  
+    message[strcspn(message, "\n")] = 0;
+
+    if (strlen(message) == 0) {
+        printf("Message cannot be empty.\n");
+        fclose(file);
+        Sleep(1500);
+        return;
+    }
 
     fprintf(file, "%s|%s|%s\n", senderEmail, receiverEmail, message);
     fclose(file);
-    printf("Message sent!\n");
+    printf("Message sent successfully!\n");
+    Sleep(2000); 
 }
+
+
 
 void viewMessages(const char *user1, const char *user2) {
     FILE *file = fopen("messages.txt", "r");
@@ -517,7 +561,7 @@ void adminMenu() {
                 viewAdoptedChildren();
                 break;
             case 5:
-                printf("View Registered Users - Feature to be implemented.\n");
+                viewUsers();
                 break;
             case 6:
                 reviewApplications();
@@ -543,6 +587,136 @@ void adminMenu() {
     }
 }
 
+void viewUsers() {
+    FILE *userFile = fopen("users.txt", "r");
+    if (!userFile) {
+        printf("Error: Could not open users.txt\n");
+        return;
+    }
+
+    User *head = NULL, *temp = NULL, *current = NULL;
+    char line[512];
+    char emails[100][100];  
+    int index = 0;
+    int i;
+
+   
+    while (fgets(line, sizeof(line), userFile)) {
+        User *newUser = malloc(sizeof(User));
+        if (sscanf(line, "%99[^|]|%99[^|]|%49[^|]|%49[^|]|%d", 
+                   newUser->email, newUser->password, newUser->firstName, newUser->lastName, &newUser->age) == 5) {
+            newUser->next = NULL;
+            if (head == NULL) {
+                head = newUser;
+                current = head;
+            } else {
+                current->next = newUser;
+                current = current->next;
+            }
+            strcpy(emails[index++], newUser->email); 
+        }
+    }
+    fclose(userFile);
+
+    if (head == NULL) {
+        printf("No users found.\n");
+        return;
+    }
+
+    current = head;
+    int choice;
+    int userIndex = 0;
+    while (1) {
+        system("cls");  
+
+        printf("=========== Registered Users ===========\n");
+        printf("User %d:\n", userIndex + 1);
+        printf("Email      : %s\n", current->email);
+        printf("Name       : %s %s\n", current->firstName, current->lastName);
+        printf("Age        : %d\n", current->age);
+        printf("---------------------------------------\n");
+
+       
+        FILE *detailsFile = fopen("applicationDetails.txt", "r");
+        int found = 0;
+        if (detailsFile) {
+            char appEmail[100], firstName[50], lastName[50], address[100], occupation[50], phone[20], maritalStatus[20], criminalRecord[10], housingStatus[20], hasChildren[10], reason[201];
+            int age, householdSize;
+            while (fgets(line, sizeof(line), detailsFile)) {
+                if (sscanf(line, "%99[^|]|%49[^|]|%49[^|]|%d|%99[^|]|%49[^|]|%19[^|]|%19[^|]|%d|%9[^|]|%19[^|]|%9[^|]|%200[^\n]",
+                           appEmail, firstName, lastName, &age, address, occupation, phone, maritalStatus,
+                           &householdSize, criminalRecord, housingStatus, hasChildren, reason) == 13) {
+                    if (strcmp(appEmail, current->email) == 0) {
+                        found = 1;
+                        printf("========== Application Details ==========\n");
+                        printf("Email: %s\n", appEmail);
+                        printf("Name: %s %s\n", firstName, lastName);
+                        printf("Age: %d\n", age);
+                        printf("Address: %s\n", address);
+                        printf("Occupation: %s\n", occupation);
+                        printf("Phone: %s\n", phone);
+                        printf("Marital Status: %s\n", maritalStatus);
+                        printf("Household Size: %d\n", householdSize);
+                        printf("Criminal Record: %s\n", criminalRecord);
+                        printf("Housing Status: %s\n", housingStatus);
+                        printf("Has Children: %s\n", hasChildren);
+                        printf("Reason for Adoption: %s\n", reason);
+                        printf("=========================================\n");
+                        break;
+                    }
+                }
+            }
+            fclose(detailsFile);
+        }
+
+        if (!found) {
+            printf("No application details found for this user.\n");
+        }
+
+        printf("\n[1] Next User\n[2] Previous User\n[0] Back to Menu\n");
+        printf("Choice: ");
+        if (scanf("%d", &choice) != 1) {
+            printf("Invalid input. Please try again.\n");
+            while (getchar() != '\n'); 
+            Sleep(1500);
+            continue;
+        }
+
+        if (choice == 1) {  
+            if (current->next != NULL) {
+                current = current->next;
+                userIndex++;
+            } else {
+                printf("This is the last user.\n");
+                Sleep(1500);
+            }
+        } else if (choice == 2) { 
+            if (userIndex > 0) {
+                current = head;
+                for (i = 0; i < userIndex - 1; i++) {
+                    current = current->next;
+                }
+                userIndex--;
+            } else {
+                printf("This is the first user.\n");
+                Sleep(1500);
+            }
+        } else if (choice == 0) {  
+            break;
+        } else {
+            printf("Invalid choice. Try again.\n");
+            Sleep(1500);
+        }
+    }
+
+    
+    while (head != NULL) {
+        User *temp = head;
+        head = head->next;
+        free(temp);
+    }
+}
+
 void adminChatWithUser() {
     FILE *userFile = fopen("users.txt", "r");
     if (!userFile) {
@@ -557,7 +731,7 @@ void adminChatWithUser() {
 
     clearScreen();
     printf("========================================\n");
-    printf("         ?? REGISTERED USERS\n");
+    printf("          REGISTERED USERS\n");
     printf("========================================\n");
 
     while (fgets(line, sizeof(line), userFile)) {
@@ -576,12 +750,20 @@ void adminChatWithUser() {
 
     char targetEmail[100];
     int found = 0;
+	printf("\n----------------------------------------\n");
+	printf("Enter the user email to chat with (or enter 0 to go back): ");
+	getchar(); 
+	fgets(targetEmail, sizeof(targetEmail), stdin);
+	targetEmail[strcspn(targetEmail, "\n")] = 0;
+	
+	if (strcmp(targetEmail, "0") == 0) {
+	    return;
+	}
+	
+	if (strcasecmp(targetEmail, "B") == 0) {
+	    return;
+	}
 
-    printf("\n----------------------------------------\n");
-    printf("Enter the user email to chat with: ");
-    getchar();
-    fgets(targetEmail, sizeof(targetEmail), stdin);
-    targetEmail[strcspn(targetEmail, "\n")] = 0;
 
     for (i = 0; i < userCount; i++) {
         if (strcmp(targetEmail, emails[i]) == 0) {
@@ -600,7 +782,7 @@ void adminChatWithUser() {
     do {
         clearScreen();
         printf("========================================\n");
-        printf("?? Chat with: %s\n", targetEmail);
+        printf(" Chat with: %s\n", targetEmail);
         printf("========================================\n");
         printf("[1]  Send Message\n");
         printf("[2]  View Messages\n");
@@ -1288,9 +1470,12 @@ void reviewAdoptions() {
     fclose(pendingFile);
 
     if (count == 0) {
-        printf("No pending adoption requests.\n");
-        return;
-    }
+    printf("No pending adoption requests.\n");
+    printf("Press Enter to return to the menu...");
+    getchar(); 
+    getchar(); 
+    return;
+}
 
     int i, j;
     int index = 0;
