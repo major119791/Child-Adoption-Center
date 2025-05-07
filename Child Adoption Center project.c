@@ -18,6 +18,7 @@ typedef struct {
     int age;
     char address[100];
     char occupation[50];
+    float salary; 
     char phone[15];
     char maritalStatus[20];
     int householdSize;
@@ -154,8 +155,23 @@ void signUp() {
         printf("Last Name: ");
         scanf(" %s", user.lastName);
 
-        printf("Age: ");
-        scanf("%d", &user.age);
+		        while (1) {
+		    printf("Age: ");
+		    if (scanf("%d", &user.age) != 1) {
+		        printf("Invalid input. Please enter a valid age.\n");
+		        while (getchar() != '\n'); 
+		        continue;
+		    }
+		
+		    if (user.age < 21) {
+		        printf("You must be at least 21 years old to register.\n");
+		        Sleep(2000);
+		        clearScreen();
+		        continue; 
+		    }
+		
+		    break; 
+		}
 
         file = fopen(filePath, "a");
         if (file == NULL) {
@@ -449,9 +465,12 @@ void checkNotifications(const char *email) {
     while (fgets(line, sizeof(line), file)) {
         sscanf(line, "%99[^|]|%49[^|]|%19[^\n]", userEmail, childName, status);
 
-        
         if (strcmp(userEmail, email) == 0) {
-            printf("Notification: Your adoption request for %s was %s.\n", childName, status);
+            if (strcmp(childName, "-") == 0) {
+                printf("Notification: Your application was %s.\n", status);
+            } else {
+                printf("Notification: Your adoption request for %s was %s.\n", childName, status);
+            }
             found = 1;
         }
     }
@@ -462,8 +481,9 @@ void checkNotifications(const char *email) {
         printf("No new notifications.\n");
     }
 
-    system("pause");  
+    system("pause");
 }
+
 
 
 void AdminLogin() {
@@ -596,11 +616,9 @@ void viewUsers() {
 
     User *head = NULL, *temp = NULL, *current = NULL;
     char line[512];
-    char emails[100][100];  
-    int index = 0;
-    int i;
+    int userIndex = 0;
 
-   
+    
     while (fgets(line, sizeof(line), userFile)) {
         User *newUser = malloc(sizeof(User));
         if (sscanf(line, "%99[^|]|%99[^|]|%49[^|]|%49[^|]|%d", 
@@ -613,21 +631,24 @@ void viewUsers() {
                 current->next = newUser;
                 current = current->next;
             }
-            strcpy(emails[index++], newUser->email); 
         }
     }
     fclose(userFile);
 
     if (head == NULL) {
         printf("No users found.\n");
+        printf("Press Enter to return to the menu...");
+        getchar(); 
+        getchar(); 
         return;
     }
 
     current = head;
     int choice;
-    int userIndex = 0;
+    int i;
+
     while (1) {
-        system("cls");  
+        system("cls");
 
         printf("=========== Registered Users ===========\n");
         printf("User %d:\n", userIndex + 1);
@@ -636,16 +657,18 @@ void viewUsers() {
         printf("Age        : %d\n", current->age);
         printf("---------------------------------------\n");
 
-       
         FILE *detailsFile = fopen("applicationDetails.txt", "r");
         int found = 0;
         if (detailsFile) {
             char appEmail[100], firstName[50], lastName[50], address[100], occupation[50], phone[20], maritalStatus[20], criminalRecord[10], housingStatus[20], hasChildren[10], reason[201];
             int age, householdSize;
+            float salary;
+
             while (fgets(line, sizeof(line), detailsFile)) {
-                if (sscanf(line, "%99[^|]|%49[^|]|%49[^|]|%d|%99[^|]|%49[^|]|%19[^|]|%19[^|]|%d|%9[^|]|%19[^|]|%9[^|]|%200[^\n]",
-                           appEmail, firstName, lastName, &age, address, occupation, phone, maritalStatus,
-                           &householdSize, criminalRecord, housingStatus, hasChildren, reason) == 13) {
+                if (sscanf(line, "%99[^|]|%49[^|]|%49[^|]|%d|%99[^|]|%49[^|]|%f|%19[^|]|%19[^|]|%d|%9[^|]|%19[^|]|%9[^|]|%200[^\n]",
+                           appEmail, firstName, lastName, &age, address, occupation, &salary, phone, maritalStatus,
+                           &householdSize, criminalRecord, housingStatus, hasChildren, reason) == 14) {
+
                     if (strcmp(appEmail, current->email) == 0) {
                         found = 1;
                         printf("========== Application Details ==========\n");
@@ -654,6 +677,7 @@ void viewUsers() {
                         printf("Age: %d\n", age);
                         printf("Address: %s\n", address);
                         printf("Occupation: %s\n", occupation);
+                        printf("Annual Salary: $%.2f\n", salary);
                         printf("Phone: %s\n", phone);
                         printf("Marital Status: %s\n", maritalStatus);
                         printf("Household Size: %d\n", householdSize);
@@ -682,7 +706,7 @@ void viewUsers() {
             continue;
         }
 
-        if (choice == 1) {  
+        if (choice == 1) {
             if (current->next != NULL) {
                 current = current->next;
                 userIndex++;
@@ -690,7 +714,7 @@ void viewUsers() {
                 printf("This is the last user.\n");
                 Sleep(1500);
             }
-        } else if (choice == 2) { 
+        } else if (choice == 2) {
             if (userIndex > 0) {
                 current = head;
                 for (i = 0; i < userIndex - 1; i++) {
@@ -701,7 +725,7 @@ void viewUsers() {
                 printf("This is the first user.\n");
                 Sleep(1500);
             }
-        } else if (choice == 0) {  
+        } else if (choice == 0) {
             break;
         } else {
             printf("Invalid choice. Try again.\n");
@@ -716,6 +740,7 @@ void viewUsers() {
         free(temp);
     }
 }
+
 
 void adminChatWithUser() {
     FILE *userFile = fopen("users.txt", "r");
@@ -744,9 +769,13 @@ void adminChatWithUser() {
     fclose(userFile);
 
     if (userCount == 0) {
-        printf("\n??  No users found.\n");
-        return;
-    }
+    printf("\n??  No users found.\n");
+    printf("Press Enter to return to the menu...");
+    getchar(); 
+    getchar(); 
+    return;
+}
+
 
     char targetEmail[100];
     int found = 0;
@@ -1269,60 +1298,44 @@ void reviewApplications() {
     char choice;
 
     while (1) {
-
         while (index < appCount && (strcmp(statuses[index], "Approved") == 0 || strcmp(statuses[index], "Denied") == 0)) {
             index++;
         }
 
-	     if (index >= appCount) {
-    printf("No more pending applications to review.\n");
+        if (index >= appCount) {
+            printf("No more pending applications to review.\n");
 
-    while (1) {
-        printf("Enter [P] to go to previous, [Q] to quit: ");
-        char input[100];
+            while (1) {
+                printf("Enter [P] to go to previous, [Q] to quit: ");
+                char input[100];
+                fflush(stdin);
+                fgets(input, sizeof(input), stdin);
+                input[strcspn(input, "\n")] = '\0';
 
-        
-        fflush(stdin); 
+                if (strlen(input) == 0 || strlen(input) != 1 || (strchr("PpQq", input[0]) == NULL)) {
+                    printf("Invalid input. Please enter P or Q only.\n");
+                    continue;
+                }
 
-        fgets(input, sizeof(input), stdin);
+                choice = toupper(input[0]);
 
-     
-        input[strcspn(input, "\n")] = '\0'; 
+                if (choice == 'P') {
+                    do {
+                        index--;
+                    } while (index >= 0 && (strcmp(statuses[index], "Approved") == 0 || strcmp(statuses[index], "Denied") == 0));
 
-       
-        if (strlen(input) == 0) {
-            printf("Invalid input. Please enter P or Q only.\n");
-            continue;
-        }
-
-        
-        if (strlen(input) != 1 || (strchr("PpQq", input[0]) == NULL)) {
-            printf("Invalid input. Please enter P or Q only.\n");
-            continue;
-        }
-
-       
-        choice = toupper(input[0]);
-
-        if (choice == 'P') {
-            do {
-                index--;
-            } while (index >= 0 && (strcmp(statuses[index], "Approved") == 0 || strcmp(statuses[index], "Denied") == 0));
-
-            if (index < 0) {
-                printf("You're at the first application.\n");
-                index = 0;
+                    if (index < 0) {
+                        printf("You're at the first application.\n");
+                        index = 0;
+                    }
+                    break;
+                } else if (choice == 'Q') {
+                    fclose(detailsFile);
+                    goto save_changes;
+                }
             }
-            break;
-        } else if (choice == 'Q') {
-            fclose(detailsFile);
-            goto save_changes;
+            continue;
         }
-    }
-
-    continue;
-}
-
 
         rewind(detailsFile);
         int found = 0;
@@ -1330,12 +1343,13 @@ void reviewApplications() {
         while (fgets(line, sizeof(line), detailsFile)) {
             char email[100], firstName[50], lastName[50], address[100], occupation[50], phone[20], maritalStatus[20], criminalRecord[10], housingStatus[20], hasChildren[10], reason[201];
             int age, householdSize;
+            float salary;
 
-            sscanf(line, "%99[^|]|%49[^|]|%49[^|]|%d|%99[^|]|%49[^|]|%19[^|]|%19[^|]|%d|%9[^|]|%19[^|]|%9[^|]|%200[^\n]",
-                   email, firstName, lastName, &age, address, occupation, phone, maritalStatus,
-                   &householdSize, criminalRecord, housingStatus, hasChildren, reason);
+            int parsed = sscanf(line, "%99[^|]|%49[^|]|%49[^|]|%d|%99[^|]|%49[^|]|%f|%19[^|]|%19[^|]|%d|%9[^|]|%19[^|]|%9[^|]|%200[^\n]",
+                                email, firstName, lastName, &age, address, occupation, &salary, phone, maritalStatus,
+                                &householdSize, criminalRecord, housingStatus, hasChildren, reason);
 
-            if (strcmp(email, emails[index]) == 0) {
+            if (parsed == 14 && strcmp(email, emails[index]) == 0) {
                 found = 1;
 
                 printf("========== Application #%d ==========\n", index + 1);
@@ -1344,6 +1358,7 @@ void reviewApplications() {
                 printf("Age: %d\n", age);
                 printf("Address: %s\n", address);
                 printf("Occupation: %s\n", occupation);
+                printf("Annual Salary: $%.2f\n", salary);
                 printf("Phone: %s\n", phone);
                 printf("Marital Status: %s\n", maritalStatus);
                 printf("Household Size: %d\n", householdSize);
@@ -1354,61 +1369,61 @@ void reviewApplications() {
                 printf("Current Status: %s\n", statuses[index]);
                 printf("=====================================\n");
 
-               while (1) {
-			    printf("\nOptions: [A]pprove, [D]eny, [N]ext, [P]revious, [Q]uit: ");
-			    
-			    char input[100];
-			    
-			    
-			    fflush(stdin);  
-			    
-			    fgets(input, sizeof(input), stdin);
-			    
-			    
-			    input[strcspn(input, "\n")] = '\0';  
-			    
-			    
-			    if (strlen(input) == 0) {
-			        printf("Invalid input. Please enter A, D, N, P, or Q only.\n");
-			        continue;
-			    }
-			
-			  
-			    if (strlen(input) != 1 || strchr("AaDdNnPpQq", input[0]) == NULL) {
-			        printf("Invalid input. Please enter A, D, N, P, or Q only.\n");
-			        continue;
-			    }
-			    
-			    
-			    choice = toupper(input[0]);
-			
-			    if (choice == 'A') {
-			        strcpy(statuses[index], "Approved");
-			        printf("Application approved.\n");
-			        break;
-			    } else if (choice == 'D') {
-			        strcpy(statuses[index], "Denied");
-			        printf("Application denied.\n");
-			        break;
-			    } else if (choice == 'N') {
-			        index++;
-			        break;
-			    } else if (choice == 'P') {
-			        do {
-			            index--;
-			        } while (index >= 0 && (strcmp(statuses[index], "Approved") == 0 || strcmp(statuses[index], "Denied") == 0));
-			
-			        if (index < 0) {
-			            printf("You're at the first application.\n");
-			            index = 0;
-			        }
-			        break;
-			    } else if (choice == 'Q') {
-			        fclose(detailsFile);
-			        goto save_changes;
-			    }
-			}
+                while (1) {
+                    printf("\nOptions: [A]pprove, [D]eny, [N]ext, [P]revious, [Q]uit: ");
+                    char input[100];
+                    fflush(stdin);
+                    fgets(input, sizeof(input), stdin);
+                    input[strcspn(input, "\n")] = '\0';
 
+                    if (strlen(input) == 0 || strlen(input) != 1 || strchr("AaDdNnPpQq", input[0]) == NULL) {
+                        printf("Invalid input. Please enter A, D, N, P, or Q only.\n");
+                        continue;
+                    }
+
+                    choice = toupper(input[0]);
+
+                    if (choice == 'A') {
+                        strcpy(statuses[index], "Approved");
+                        printf("Application approved.\n");
+
+                        FILE *notifFile = fopen("notifications.txt", "a");
+                        if (notifFile) {
+                            fprintf(notifFile, "%s|%s|%s\n", emails[index], "-", "Approved");
+                            fclose(notifFile);
+                        }
+                        break;
+
+                    } else if (choice == 'D') {
+                        strcpy(statuses[index], "Denied");
+                        printf("Application denied.\n");
+
+                        FILE *notifFile = fopen("notifications.txt", "a");
+                        if (notifFile) {
+                            fprintf(notifFile, "%s|%s|%s\n", emails[index], "-", "Denied");
+                            fclose(notifFile);
+                        }
+                        break;
+
+                    } else if (choice == 'N') {
+                        index++;
+                        break;
+                    } else if (choice == 'P') {
+                        do {
+                            index--;
+                        } while (index >= 0 && (strcmp(statuses[index], "Approved") == 0 || strcmp(statuses[index], "Denied") == 0));
+
+                        if (index < 0) {
+                            printf("You're at the first application.\n");
+                            index = 0;
+                        }
+                        break;
+
+                    } else if (choice == 'Q') {
+                        fclose(detailsFile);
+                        goto save_changes;
+                    }
+                }
 
                 Sleep(1500);
                 clearScreen();
@@ -1441,6 +1456,8 @@ save_changes:
     printf("Application review complete. Changes saved.\n");
     Sleep(2000);
 }
+
+
 
 void reviewAdoptions() {
     FILE *pendingFile = fopen("pending_adoptions.txt", "r");
@@ -1498,7 +1515,7 @@ void reviewAdoptions() {
             FILE *childrenFile = fopen("children.txt", "r");
             FILE *tempChildrenFile = fopen("children_temp.txt", "w");
             FILE *adoptedFile = fopen("adopted_children.txt", "a");
-            FILE *notifFile = fopen("notifications.txt", "a"); // Add notification to file
+            FILE *notifFile = fopen("notifications.txt", "a"); 
 
             if (!childrenFile || !tempChildrenFile || !adoptedFile || !notifFile) {
                 printf("Error opening necessary files.\n");
@@ -2057,6 +2074,23 @@ void submitApplication() {
     
     GET_INPUT("Address: ", loggedInUser.address);
     GET_INPUT("Occupation: ", loggedInUser.occupation);
+	   
+	    while (1) {
+	    char buffer[20];
+	    printf("Annual Salary: ");
+	    fgets(buffer, sizeof(buffer), stdin);
+	    if (strcmp(buffer, "0\n") == 0) {
+	        printf("Application cancelled.\n");
+	        Sleep(1500);
+	        return;
+	    }
+	    if (sscanf(buffer, "%f", &loggedInUser.salary) == 1 && loggedInUser.salary >= 0) {
+	        break;
+	    } else {
+	        printf("Invalid input. Please enter a valid salary amount.\n");
+	    }
+	}
+
     GET_INPUT("Phone: ", loggedInUser.phone);
     GET_INPUT("Marital Status: ", loggedInUser.maritalStatus);
 
@@ -2096,21 +2130,22 @@ void submitApplication() {
    
     FILE *detailsFile = fopen("applicationDetails.txt", "a");
     if (detailsFile) {
-        fprintf(detailsFile, "%s|%s|%s|%d|%s|%s|%s|%s|%d|%s|%s|%s|%s\n",
-            loggedInUser.email,
-            loggedInUser.firstName,
-            loggedInUser.lastName,
-            loggedInUser.age,
-            loggedInUser.address,
-            loggedInUser.occupation,
-            loggedInUser.phone,
-            loggedInUser.maritalStatus,
-            loggedInUser.householdSize,
-            loggedInUser.criminalRecord,
-            loggedInUser.housingStatus,
-            loggedInUser.hasChildren,
-            loggedInUser.reason
-        );
+	       fprintf(detailsFile, "%s|%s|%s|%d|%s|%s|%.2f|%s|%s|%d|%s|%s|%s|%s\n",
+	    loggedInUser.email,
+	    loggedInUser.firstName,
+	    loggedInUser.lastName,
+	    loggedInUser.age,
+	    loggedInUser.address,
+	    loggedInUser.occupation,
+	    loggedInUser.salary, 
+	    loggedInUser.phone,
+	    loggedInUser.maritalStatus,
+	    loggedInUser.householdSize,
+	    loggedInUser.criminalRecord,
+	    loggedInUser.housingStatus,
+	    loggedInUser.hasChildren,
+	    loggedInUser.reason
+	);
         fclose(detailsFile);
     } else {
         printf("Warning: Could not save detailed application info.\n");
@@ -2129,7 +2164,7 @@ int main() {
     int loggedIn = 0;
 
     while (1) {
-        clearScreen(); // Optional: clears the console if implemented
+        clearScreen(); 
         printf("=====================================================\n");
         printf("               _             _   _                _____           _            \n");
         printf("      /\      | |           | | (_)              / ____|         | |           \n");
@@ -2149,7 +2184,7 @@ int main() {
 
         if (scanf("%d", &choice) != 1) {
             printf("\nInvalid input. Please enter a number between 1 and 4.\n");
-            while (getchar() != '\n'); // clear invalid input
+            while (getchar() != '\n'); 
             Sleep(1500);
             continue;
         }
