@@ -575,7 +575,7 @@ void adminMenu() {
                 deleteChild();
                 break;
             case 3:
-                viewAllChildren();
+                viewChildAdmin();
                 break;
             case 4:
                 viewAdoptedChildren();
@@ -873,6 +873,192 @@ void generateChildID(char id[], char genderInitial) {
         }
     }
 }
+
+void viewChildAdmin() {
+    FILE *file, *pendingFile;
+    char filePath[MAX_PATH];
+    char line[512];
+    Child children[MAX_CHILDREN];
+    int childCount = 0, currentIndex = 0;
+    int i;
+
+    char pendingIDs[MAX_CHILDREN][10];
+    int pendingCount = 0;
+
+   
+    SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, filePath);
+    strcat(filePath, "\\children.txt");
+
+    
+    file = fopen(filePath, "r");
+    if (file == NULL) {
+        printf("No child profiles found or error opening file.\n");
+        Sleep(2000);
+        return;
+    }
+
+   
+    pendingFile = fopen("pending_adoptions.txt", "r");
+    if (pendingFile != NULL) {
+        while (fgets(line, sizeof(line), pendingFile)) {
+            sscanf(line, "%9[^|]", pendingIDs[pendingCount++]);
+        }
+        fclose(pendingFile);
+    }
+
+    
+    while (fgets(line, sizeof(line), file)) {
+        Child c;
+        if (sscanf(line, "%7[^|]|%49[^|]|%9[^|]|%19[^|]|%d|%f|%f|%*d|%4[^|]|%99[^|]|%199[^|]|%49[^|]|%99[^|]|%99[^\n]",
+                   c.id, c.name, c.gender, c.birthDate, &c.age, &c.height, &c.weight,
+                   c.bloodType, c.allergies, c.medicalConditions, c.educationLevel, c.hobbies, c.languagesSpoken) == 13) {
+            
+            
+            int isPending = 0;
+            for (i = 0; i < pendingCount; i++) {
+                if (strcmp(c.id, pendingIDs[i]) == 0) {
+                    isPending = 1;
+                    break;
+                }
+            }
+            if (isPending) continue; 
+
+            children[childCount++] = c;
+            if (childCount >= MAX_CHILDREN) break;
+        }
+    }
+    fclose(file);
+
+    
+    if (childCount == 0) {
+        printf("No child profiles available (may be pending or none exist).\n");
+        printf("\nPress Enter to return to the Admin Menu...");
+        getchar();
+        getchar();
+        clearScreen();
+        return;
+    }
+
+    
+    while (1) {
+        clearScreen();
+        printf("========= Child Profile %d of %d =========\n", currentIndex + 1, childCount);
+        Child c = children[currentIndex];
+        printf("ID: %s\n", c.id);
+        printf("Name: %s\n", c.name);
+        printf("Gender: %s\n", c.gender);
+        printf("Birth Date: %s\n", c.birthDate);
+        printf("Age: %d\n", c.age);
+        printf("Height: %.2f cm\n", c.height);
+        printf("Weight: %.2f kg\n", c.weight);
+        printf("Blood Type: %s\n", c.bloodType);
+        printf("Allergies: %s\n", c.allergies);
+        printf("Medical Conditions: %s\n", c.medicalConditions);
+        printf("Education Level: %s\n", c.educationLevel);
+        printf("Hobbies: %s\n", c.hobbies);
+        printf("Languages Spoken: %s\n", c.languagesSpoken);
+        printf("----------------------------------------\n");
+
+        
+        printf("\nOptions: [N]ext, [P]revious, [B]ack to Admin Menu, [E]dit this Profile: ");
+        char choice[10];
+        fgets(choice, sizeof(choice), stdin);
+        choice[strcspn(choice, "\n")] = '\0';
+
+        if (strcasecmp(choice, "n") == 0) {
+            if (currentIndex < childCount - 1) currentIndex++;
+            else {
+                printf("You are already at the last profile.\n");
+                Sleep(1500);
+            }
+        } else if (strcasecmp(choice, "p") == 0) {
+            if (currentIndex > 0) currentIndex--;
+            else {
+                printf("You are already at the first profile.\n");
+                Sleep(1500);
+            }
+        } else if (strcasecmp(choice, "b") == 0) {
+            break; 
+        } else if (strcasecmp(choice, "e") == 0) {
+            Child *edit = &children[currentIndex];
+            char input[200];
+
+            printf("\nLeave blank to keep the current value.\n");
+
+            printf("Name [%s]: ", edit->name);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) strncpy(edit->name, input, sizeof(edit->name));
+
+            printf("Gender [%s]: ", edit->gender);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) strncpy(edit->gender, input, sizeof(edit->gender));
+
+            printf("Birth Date [%s]: ", edit->birthDate);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) strncpy(edit->birthDate, input, sizeof(edit->birthDate));
+
+            printf("Age [%d]: ", edit->age);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) edit->age = atoi(input);
+
+            printf("Height (cm) [%.2f]: ", edit->height);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) edit->height = atof(input);
+
+            printf("Weight (kg) [%.2f]: ", edit->weight);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) edit->weight = atof(input);
+
+            printf("Blood Type [%s]: ", edit->bloodType);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) strncpy(edit->bloodType, input, sizeof(edit->bloodType));
+
+            printf("Allergies [%s]: ", edit->allergies);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) strncpy(edit->allergies, input, sizeof(edit->allergies));
+
+            printf("Medical Conditions [%s]: ", edit->medicalConditions);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) strncpy(edit->medicalConditions, input, sizeof(edit->medicalConditions));
+
+            printf("Education Level [%s]: ", edit->educationLevel);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) strncpy(edit->educationLevel, input, sizeof(edit->educationLevel));
+
+            printf("Hobbies [%s]: ", edit->hobbies);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) strncpy(edit->hobbies, input, sizeof(edit->hobbies));
+
+            printf("Languages Spoken [%s]: ", edit->languagesSpoken);
+            fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
+            if (strlen(input)) strncpy(edit->languagesSpoken, input, sizeof(edit->languagesSpoken));
+
+            // Save changes to file
+            file = fopen(filePath, "w");
+            if (file == NULL) {
+                printf("Error saving updates.\n");
+                Sleep(2000);
+                continue;
+            }
+
+            for (i = 0; i < childCount; i++) {
+                fprintf(file, "%s|%s|%s|%s|%d|%.2f|%.2f|0|%s|%s|%s|%s|%s|%s\n",
+                        children[i].id, children[i].name, children[i].gender, children[i].birthDate,
+                        children[i].age, children[i].height, children[i].weight,
+                        children[i].bloodType, children[i].allergies, children[i].medicalConditions,
+                        children[i].educationLevel, children[i].hobbies, children[i].languagesSpoken);
+            }
+
+            fclose(file);
+            printf("Profile updated successfully.\n");
+            Sleep(1500);
+        } else {
+            printf("Invalid choice. Please enter 'n', 'p', 'b', or 'e'.\n");
+            Sleep(1500);
+        }
+    }
+}
+
 
 void addChild() {
     Child child;
@@ -1567,8 +1753,11 @@ void reviewAdoptions() {
             }
 
             
-            fprintf(notifFile, "%s|%s|Declined\n", requests[index].parentEmail, requests[index].childName);
-            fclose(notifFile);
+		 fprintf(notifFile, "%s|%s|Declined\n", requests[index].parentEmail, requests[index].childName);
+		fclose(notifFile);
+		
+		
+		denyAdoptionRequest(requests[index].childID);
 
             
             for (j = index; j < count - 1; j++) {
@@ -1614,6 +1803,31 @@ void reviewAdoptions() {
 
     printf("Review process complete.\n");
     Sleep(2000);
+}
+
+void denyAdoptionRequest(const char* childID) {
+    FILE *in = fopen("pending_adoptions.txt", "r");
+    FILE *out = fopen("temp_pending.txt", "w");
+
+    if (!in || !out) {
+        printf("Error processing denial.\n");
+        return;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), in)) {
+        char id[10];
+        sscanf(line, "%9[^|]", id);
+        if (strcmp(id, childID) != 0) {
+            fputs(line, out); // keep others
+        }
+    }
+
+    fclose(in);
+    fclose(out);
+
+    remove("pending_adoptions.txt");
+    rename("temp_pending.txt", "pending_adoptions.txt");
 }
 
 //User menu funtions
@@ -1747,7 +1961,7 @@ void filterChildren() {
         printf("Filter by:\n1. Blood Type\n2. Age\n3. Gender\nChoice: ");
         if (scanf("%d", &choice) != 1 || choice < 1 || choice > 3) {
             printf("Invalid choice. Please enter 1, 2, or 3.\n");
-            while (getchar() != '\n'); // Clear input buffer
+            while (getchar() != '\n'); 
         } else {
             break;
         }
@@ -1758,7 +1972,7 @@ void filterChildren() {
     while (1) {
         printf("Enter search term: ");
         fgets(search, sizeof(search), stdin);
-        search[strcspn(search, "\n")] = '\0'; // Remove newline
+        search[strcspn(search, "\n")] = '\0'; 
 
         if (choice == 1) {
             if (strcmp(search, "A+") != 0 && strcmp(search, "A-") != 0 &&
@@ -1789,13 +2003,13 @@ void filterChildren() {
         break;
     }
 
-    printf("\n%-4s %-10s %-20s %-5s %-10s %-10s %-10s\n", "No", "ID", "Name", "Age", "Gender", "BloodType", "Adopted");
-    printf("-------------------------------------------------------------------------------\n");
+    printf("\n%-4s %-10s %-20s %-5s %-10s %-10s\n", "No", "ID", "Name", "Age", "Gender", "BloodType");
+    printf("--------------------------------------------------------------------\n");
 
     while (fgets(line, sizeof(line), file)) {
         Child c;
-        sscanf(line, "%[^|]|%[^|]|%[^|]|%[^|]|%d|%f|%f|%d|%[^|]|%[^|]|%[^|]|%[^|]|%[^|]|%[^\n]",
-               c.id, c.name, c.gender, c.birthDate, &c.age, &c.height, &c.weight, &c.adopted,
+        sscanf(line, "%[^|]|%[^|]|%[^|]|%[^|]|%d|%f|%f|%*d|%[^|]|%[^|]|%[^|]|%[^|]|%[^|]|%[^\n]",
+               c.id, c.name, c.gender, c.birthDate, &c.age, &c.height, &c.weight,
                c.bloodType, c.allergies, c.medicalConditions, c.educationLevel,
                c.hobbies, c.languagesSpoken);
 
@@ -1819,9 +2033,8 @@ void filterChildren() {
 
         if (match && matchCount < MAX_MATCHES) {
             matches[matchCount++] = c;
-            printf("%-4d %-10s %-20s %-5d %-10s %-10s %-10s\n",
-                   matchCount, c.id, c.name, c.age, c.gender,
-                   c.bloodType, c.adopted ? "Yes" : "No");
+            printf("%-4d %-10s %-20s %-5d %-10s %-10s\n",
+                   matchCount, c.id, c.name, c.age, c.gender, c.bloodType);
         }
     }
 
@@ -1859,7 +2072,6 @@ void filterChildren() {
     printf("Height: %.2f cm\n", c.height);
     printf("Weight: %.2f kg\n", c.weight);
     printf("Blood Type: %s\n", c.bloodType);
-    printf("Adopted: %s\n", c.adopted ? "Yes" : "No");
     printf("Allergies: %s\n", c.allergies);
     printf("Medical Conditions: %s\n", c.medicalConditions);
     printf("Education Level: %s\n", c.educationLevel);
@@ -1869,6 +2081,7 @@ void filterChildren() {
 
     system("pause");
 }
+
 
 
 
@@ -1999,7 +2212,6 @@ void adoptChild() {
 }
 
 
-
 void viewMyAdoptedChildren() {
     char filePath[MAX_PATH], line[256];
     FILE *file;
@@ -2041,7 +2253,6 @@ void viewMyAdoptedChildren() {
     getchar(); 
     clearScreen();
 }
-
 
 void submitApplication() {
     if (hasSubmittedApplication(loggedInUser.email)) {
