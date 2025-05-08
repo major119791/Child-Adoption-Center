@@ -397,7 +397,6 @@ void sendMessage(const char *senderEmail, const char *receiverEmail) {
         return;
     }
 
-    
     FILE *file = fopen("messages.txt", "a");
     if (!file) {
         printf("Error opening message file.\n");
@@ -412,16 +411,28 @@ void sendMessage(const char *senderEmail, const char *receiverEmail) {
     message[strcspn(message, "\n")] = 0;
 
     if (strlen(message) == 0) {
-        printf("Message cannot be empty.\n");
+        printf("Message cannot be empty. Returning to menu...\n");
         fclose(file);
-        Sleep(1500);
+        Sleep(2000);
         return;
     }
 
     fprintf(file, "%s|%s|%s\n", senderEmail, receiverEmail, message);
     fclose(file);
+
+    
+    if (strcmp(receiverEmail, "admin@system.com") == 0) {
+        FILE *notifFile = fopen("admin_notifications.txt", "a");
+        if (notifFile) {
+            fprintf(notifFile, "New message from %s\n", senderEmail);
+            fclose(notifFile);
+        } else {
+            printf("Warning: Could not write admin notification.\n");
+        }
+    }
+
     printf("Message sent successfully!\n");
-    Sleep(2000); 
+    Sleep(2000);
 }
 
 
@@ -553,10 +564,11 @@ void adminMenu() {
         printf("   [5] View Registered Users\n");
         printf("   [6] Review Applications\n");
         printf("   [7] Review Adoption\n");
-        printf("   [8] Chat With User\n");
-        printf("   [9] Exit\n");
+        printf("   [8] Notification\n");
+        printf("   [9] Chat With User\n");
+        printf("   [10] Exit\n");
         printf("-----------------------------------------------------\n");
-        printf("Enter your choice (1-9): ");
+        printf("Enter your choice (1-10): ");
         
         if (scanf("%d", &choice) != 1) {
             printf("\nInvalid input. Please enter a number between 1 and 9.\n");
@@ -591,21 +603,56 @@ void adminMenu() {
                 break;
             
             case 8:
-            	adminChatWithUser();
+            	checkAdminNotifications();
+				break;
+            	
+            case 9:
+				adminChatWithUser();
             	break;
 			    
-            case 9:
+            case 10:
                 printf("Returning to main menu...\n");
                 Sleep(1500);
                 clearScreen();
                 return;
             default:
-                printf("\nInvalid choice. Please select a number between 1 and 9.\n");
+                printf("\nInvalid choice. Please select a number between 1 and 10.\n");
                 Sleep(1500);
                 clearScreen();
         }
     }
 }
+
+void checkAdminNotifications() {
+    FILE *notifFile = fopen("admin_notifications.txt", "r");
+    if (!notifFile) {
+        printf("No new notifications.\n");
+        printf("Press Enter to return to the menu...");
+        getchar(); getchar(); 
+        return;
+    }
+
+    char line[256];
+    int hasContent = 0;
+
+    printf("\n===== ADMIN NOTIFICATIONS =====\n");
+    while (fgets(line, sizeof(line), notifFile)) {
+        printf("%s", line);
+        hasContent = 1;
+    }
+    printf("================================\n");
+
+    fclose(notifFile);
+
+    if (!hasContent) {
+        printf("No new notifications.\n");
+    }
+
+    printf("Press Enter to return to the menu...");
+    getchar(); getchar(); 
+}
+
+
 
 void viewUsers() {
     FILE *userFile = fopen("users.txt", "r");
@@ -1033,7 +1080,7 @@ void viewChildAdmin() {
             fgets(input, sizeof(input), stdin); input[strcspn(input, "\n")] = '\0';
             if (strlen(input)) strncpy(edit->languagesSpoken, input, sizeof(edit->languagesSpoken));
 
-            // Save changes to file
+           
             file = fopen(filePath, "w");
             if (file == NULL) {
                 printf("Error saving updates.\n");
@@ -2081,7 +2128,6 @@ void filterChildren() {
 
     system("pause");
 }
-
 
 
 
